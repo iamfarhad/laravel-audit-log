@@ -13,34 +13,18 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Trait that implements the AuditableInterface to make models auditable.
+ */
 trait Auditable
 {
-    /**
-     * Fields to exclude from audit logging.
-     *
-     * @var array<string>
-     */
-    protected array $auditExclude = [];
-
-    /**
-     * Fields to include in audit logging.
-     *
-     * @var array<string>
-     */
-    protected array $auditInclude = ['*'];
-
-    /**
-     * Whether auditing is enabled for this model.
-     */
-    protected bool $auditingEnabled = true;
-
     /**
      * Boot the auditable trait.
      */
     public static function bootAuditable(): void
     {
         static::created(function (Model $model) {
-            if ($model instanceof AuditableInterface && $model->isAuditingEnabled()) {
+            if ($model->isAuditingEnabled()) {
                 Log::debug("Dispatching ModelAudited", [
                     'model' => get_class($model),
                     'action' => 'created'
@@ -50,7 +34,7 @@ trait Auditable
         });
 
         static::updated(function (Model $model) {
-            if ($model instanceof AuditableInterface && $model->isAuditingEnabled()) {
+            if ($model->isAuditingEnabled()) {
                 $oldValues = $model->getOriginal();
                 $newValues = $model->getChanges();
 
@@ -67,7 +51,7 @@ trait Auditable
         });
 
         static::deleted(function (Model $model) {
-            if ($model instanceof AuditableInterface && $model->isAuditingEnabled()) {
+            if ($model->isAuditingEnabled()) {
                 Log::debug("Dispatching ModelAudited", [
                     'model' => get_class($model),
                     'action' => 'deleted'
@@ -78,7 +62,7 @@ trait Auditable
 
         if (method_exists(static::class, 'restored')) {
             static::restored(function (Model $model) {
-                if ($model instanceof AuditableInterface && $model->isAuditingEnabled()) {
+                if ($model->isAuditingEnabled()) {
                     Log::debug("Dispatching ModelAudited", [
                         'model' => get_class($model),
                         'action' => 'restored'
@@ -90,33 +74,14 @@ trait Auditable
     }
 
     /**
-     * Get fields to exclude from audit logging.
-     *
-     * @return array<string>
-     */
-    public function getAuditExclude(): array
-    {
-        return array_merge(
-            $this->auditExclude,
-            config('audit-logger.fields.exclude', [])
-        );
-    }
-
-    /**
-     * Get fields to include in audit logging.
-     *
-     * @return array<string>
-     */
-    public function getAuditInclude(): array
-    {
-        return $this->auditInclude;
-    }
-
-    /**
      * Determine if auditing is enabled for this model.
      */
     public function isAuditingEnabled(): bool
     {
+        if (!property_exists($this, 'auditingEnabled')) {
+            return true;
+        }
+
         return $this->auditingEnabled;
     }
 
@@ -159,8 +124,14 @@ trait Auditable
      */
     public function getAuditableAttributes(array $attributes): array
     {
-        $include = $this->getAuditInclude();
-        $exclude = $this->getAuditExclude();
+        // Get exclude fields - combining model property and global config
+        $exclude = config('audit-logger.fields.exclude', []);
+
+        if (property_exists($this, 'auditExclude')) {
+            $exclude = array_merge($exclude, $this->auditExclude);
+        }
+
+        $include = property_exists($this, 'auditInclude') ? $this->auditInclude : ['*'];
 
         // If include is ['*'], include all except excluded
         if ($include === ['*']) {

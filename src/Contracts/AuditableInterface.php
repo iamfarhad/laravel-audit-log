@@ -7,20 +7,6 @@ namespace iamfarhad\LaravelAuditLog\Contracts;
 interface AuditableInterface
 {
     /**
-     * Get fields to exclude from audit logging.
-     *
-     * @return array<string>
-     */
-    public function getAuditExclude(): array;
-
-    /**
-     * Get fields to include in audit logging.
-     *
-     * @return array<string>
-     */
-    public function getAuditInclude(): array;
-
-    /**
      * Determine if auditing is enabled for this model.
      */
     public function isAuditingEnabled(): bool;
@@ -44,9 +30,4 @@ interface AuditableInterface
      * Get the primary key value for the model.
      */
     public function getKey(): string|int;
-
-    /**
-     * Determine if the model should queue audit events.
-     */
-    public function shouldQueueAudit(): bool;
 }

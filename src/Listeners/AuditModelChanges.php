@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Listeners;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditableInterface;
 use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use Illuminate\Support\Facades\Log;
@@ -28,12 +27,15 @@ final class AuditModelChanges
         try {
             $model = $event->model;
 
-            if (!$model instanceof AuditableInterface) {
-                Log::warning('Non-auditable model received', ['model' => get_class($model)]);
+            // Check if model has required methods from Auditable trait
+            if (
+                !method_exists($model, 'getAuditableAttributes') ||
+                !method_exists($model, 'getAuditEntityType') ||
+                !method_exists($model, 'getAuditMetadata')
+            ) {
+                Log::warning('Model missing required audit methods', ['model' => get_class($model)]);
                 return;
             }
-
-            // Force storage check (bypass cache)
 
             // Filter attributes based on include/exclude rules
             $oldValues = $event->oldValues ? $model->getAuditableAttributes($event->oldValues) : null;
