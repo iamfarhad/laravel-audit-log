@@ -50,18 +50,17 @@ jobs:
           echo "::add-matcher::/opt/hostedtoolcache/phpunit.json"
         shell: /usr/bin/bash -e {0}
 
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
-          path: ${{ steps.composer-cache.outputs.dir }}
+          path: /home/runner/.cache/composer/files
           key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-${{ matrix.stability }}
           restore-keys: |
             ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-
             ${{ runner.os }}-composer-${{ matrix.php }}-
+          enableCrossOsArchive: false
+          fail-on-cache-miss: false
+          lookup-only: false
 
       - name: Install dependencies
         run: |
