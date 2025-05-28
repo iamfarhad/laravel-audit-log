@@ -40,30 +40,27 @@ jobs:
           tools: composer:v2
 
       - name: Create Laravel app
-        run: |
-          composer create-project laravel/laravel:${{ matrix.laravel }} laravel-app --prefer-dist --no-interaction
-          cd laravel-app
-          composer require laravel/pint --dev
+        run: composer create-project laravel/laravel:${{ matrix.laravel }} laravel-app --prefer-dist --no-interaction
+
+      - name: Install Laravel Pint
+        working-directory: laravel-app
+        run: composer require laravel/pint --dev
 
       - name: Install package from path
-        run: |
-          cd laravel-app
-          composer config repositories.local path "../"
-          composer require iamfarhad/laravel-audit-log:@dev --no-interaction
+        working-directory: laravel-app
+        run: composer config repositories.local path "../" && composer require iamfarhad/laravel-audit-log:@dev --no-interaction
 
       - name: Publish config
-        run: |
-          cd laravel-app
-          php artisan vendor:publish --provider="iamfarhad\\LaravelAuditLog\\AuditLoggerServiceProvider"
+        working-directory: laravel-app
+        run: php artisan vendor:publish --provider="iamfarhad\\LaravelAuditLog\\AuditLoggerServiceProvider"
 
       - name: Create sample migration and model
-        run: |
-          cd laravel-app
-          php artisan make:model TestModel -m
+        working-directory: laravel-app
+        run: php artisan make:model TestModel -m
 
       - name: Add Auditable trait to model
+        working-directory: laravel-app
         run: |
-          cd laravel-app
           cat > app/Models/TestModel.php << 'EOL'
           <?php
           
@@ -85,18 +82,16 @@ jobs:
           EOL
 
       - name: Update migration
-        run: |
-          cd laravel-app
-          find database/migrations -name "*_create_test_models_table.php" -exec sed -i 's/Schema::create/\$table->string("name")->nullable();\n            Schema::create/g' {} \;
+        working-directory: laravel-app
+        run: find database/migrations -name "*_create_test_models_table.php" -exec sed -i 's/Schema::create/\$table->string("name")->nullable();\n            Schema::create/g' {} \;
 
       - name: Run migrations
-        run: |
-          cd laravel-app
-          php artisan migrate
+        working-directory: laravel-app
+        run: php artisan migrate
 
       - name: Create basic test
+        working-directory: laravel-app
         run: |
-          cd laravel-app
           cat > tests/Feature/AuditLogTest.php << 'EOL'
           <?php
           
@@ -146,6 +141,5 @@ jobs:
           EOL
 
       - name: Run tests
-        run: |
-          cd laravel-app
-          php artisan test 
+        working-directory: laravel-app
+        run: php artisan test 
