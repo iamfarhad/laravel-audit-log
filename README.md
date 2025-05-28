@@ -4,8 +4,8 @@ A comprehensive entity-level audit logging package for Laravel with model-specif
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
 [![Total Downloads](https://img.shields.io/packagist/dt/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
-[![PHP Version](https://img.shields.io/packagist/php-v/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
-[![Laravel Version](https://img.shields.io/badge/Laravel-11.x|12.x-red.svg?style=flat-square)](https://laravel.com/)
+[![PHP Version](https://img.shields.io/badge/php-%5E8.1-blue.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
+[![Laravel Version](https://img.shields.io/badge/Laravel-10.x|11.x|12.x-red.svg?style=flat-square)](https://laravel.com/)
 [![GitHub stars](https://img.shields.io/github/stars/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://github.com/iamfarhad/laravel-audit-log/stargazers)
 
 [![License](https://img.shields.io/packagist/l/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
@@ -29,8 +29,8 @@ A comprehensive entity-level audit logging package for Laravel with model-specif
 
 ## Requirements
 
-- PHP >= 8.2
-- Laravel 11.x or 12.x
+- PHP >= 8.1
+- Laravel 10.x, 11.x or 12.x (PHP 8.1 only supported with Laravel 10.x)
 - MySQL 8.0+
 
 ## Installation
