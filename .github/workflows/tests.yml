@@ -16,12 +16,20 @@ env:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
+          
     strategy:
-      fail-fast: true
+      fail-fast: false  # Changed to false to see all failures
       matrix:
         php: [8.2, 8.3, 8.4]
         laravel: [11.*, 12.*]
         stability: [prefer-lowest, prefer-stable]
+        db-driver: [mysql, mongodb]
         exclude:
           # Skip incompatible PHP versions and Laravel versions
           - php: 8.2
@@ -29,7 +37,7 @@ jobs:
           - php: 8.4
             stability: prefer-lowest
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.db-driver }}
 
     steps:
       - name: Checkout code
@@ -44,8 +52,20 @@ jobs:
           ini-values: error_reporting=E_ALL
           tools: composer:v2
 
-      - name: Verify MongoDB extension
-        run: php -r "echo 'MongoDB extension loaded: ' . (extension_loaded('mongodb') ? 'Yes' : 'No') . PHP_EOL;"
+      - name: Verify PHP and extensions
+        run: |
+          php -v
+          php -m
+          echo "MongoDB extension loaded: " $(php -r "echo extension_loaded('mongodb') ? 'Yes' : 'No';")
+          php --ini
+
+      - name: Verify MongoDB Connection
+        if: matrix.db-driver == 'mongodb'
+        run: |
+          # Install MongoDB client to test connection
+          sudo apt-get update && sudo apt-get install -y mongodb-clients
+          mongosh --version || echo "mongosh not installed, using mongo"
+          mongosh --eval "db.version()" mongodb://localhost:27017/test || mongo --eval "db.version()" mongodb://localhost:27017/test
 
       - name: Setup problem matchers
         run: |
@@ -61,21 +81,60 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-${{ matrix.stability }}
+          key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.db-driver }}-${{ hashFiles('**/composer.json') }}-${{ matrix.stability }}
           restore-keys: |
-            ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-
-            ${{ runner.os }}-composer-${{ matrix.php }}-
+            ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.db-driver }}-${{ hashFiles('**/composer.json') }}-
+            ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-
+
+      - name: Install MongoDB package for Laravel
+        if: matrix.db-driver == 'mongodb'
+        run: composer require mongodb/laravel-mongodb:"^4.0" --no-interaction --prefer-dist
 
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction --ignore-platform-req=ext-mongodb
+
+      - name: List installed packages
+        run: composer show
+
+      - name: Check for PHPUnit
+        run: |
+          if [ -f vendor/bin/phpunit ]; then
+            echo "PHPUnit exists at vendor/bin/phpunit"
+            ls -la vendor/bin/phpunit
+          else
+            echo "PHPUnit not found!"
+            ls -la vendor/bin/
+          fi
+
+      - name: Check for tests directory
+        run: |
+          if [ -d tests ]; then
+            echo "Tests directory exists"
+            ls -la tests
+          else
+            echo "Tests directory not found!"
+          fi
 
       - name: Run PHPUnit tests
-        run: vendor/bin/phpunit --coverage-text
+        run: |
+          if [ -f vendor/bin/phpunit ]; then
+            DRIVER=${{ matrix.db-driver }} vendor/bin/phpunit --coverage-text --verbose
+          else
+            echo "PHPUnit not found, skipping tests"
+            exit 1
+          fi
+        env:
+          MONGODB_HOST: localhost
+          MONGODB_PORT: 27017
+          MONGODB_DATABASE: audit_test
+          DB_DRIVER: ${{ matrix.db-driver }}
 
       - name: Run PHP Static Analysis
         run: |
           if [ -f vendor/bin/phpstan ]; then
             vendor/bin/phpstan analyse
+          else
+            echo "PHPStan not found, skipping static analysis"
           fi 

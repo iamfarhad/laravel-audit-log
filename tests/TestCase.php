@@ -23,6 +23,9 @@ abstract class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
+        // Get driver from environment - defaults to 'mysql'
+        $driver = env('DB_DRIVER', 'mysql');
+
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
@@ -41,10 +44,24 @@ abstract class TestCase extends Orchestra
             'password' => env('MONGODB_PASSWORD', ''),
         ]);
 
-        // Configure audit logger
-        $app['config']->set('audit-logger.default', 'mysql');
-        $app['config']->set('audit-logger.drivers.mysql.connection', 'testbench');
+        // Configure audit logger based on the selected driver
+        if ($driver === 'mongodb') {
+            $app['config']->set('audit-logger.default', 'mongodb');
+            $app['config']->set('audit-logger.drivers.mongodb.connection', 'mongodb');
+            $app['config']->set('audit-logger.drivers.mongodb.database', env('MONGODB_DATABASE', 'audit_test'));
+        } else {
+            $app['config']->set('audit-logger.default', 'mysql');
+            $app['config']->set('audit-logger.drivers.mysql.connection', 'testbench');
+        }
+
         $app['config']->set('audit-logger.batch.enabled', false);
         $app['config']->set('audit-logger.auto_migration', true);
+
+        $this->setUpDatabase();
+    }
+
+    protected function setUpDatabase(): void
+    {
+        // Any additional database setup can go here
     }
 }
