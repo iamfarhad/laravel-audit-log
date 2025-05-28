@@ -17,15 +17,19 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         php: [8.2, 8.3, 8.4]
         laravel: [11.*, 12.*]
+        stability: [prefer-lowest, prefer-stable]
         exclude:
+          # Skip incompatible PHP versions and Laravel versions
           - php: 8.2
             laravel: 12.*
+          - php: 8.4
+            stability: prefer-lowest
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
 
     steps:
       - name: Checkout code
@@ -46,24 +50,28 @@ jobs:
           echo "::add-matcher::/opt/hostedtoolcache/phpunit.json"
         shell: /usr/bin/bash -e {0}
 
-      - name: Cache Composer dependencies
+      - name: Get composer cache directory
         id: composer-cache
-        uses: actions/cache@v4
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
         with:
-          path: vendor
-          key: ${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-${{ hashFiles('**/composer.lock') }}
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-${{ matrix.stability }}
           restore-keys: |
-            ${{ runner.os }}-php${{ matrix.php }}-laravel${{ matrix.laravel }}-
-            ${{ runner.os }}-php${{ matrix.php }}-
-            ${{ runner.os }}-
+            ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-
+            ${{ runner.os }}-composer-${{ matrix.php }}-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress --no-suggest
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Run PHPUnit tests
         run: vendor/bin/phpunit --coverage-text
 
-      - name: Run PHPStan
+      - name: Run PHP Static Analysis
         run: |
           if [ -f vendor/bin/phpstan ]; then
             vendor/bin/phpstan analyse
