@@ -1,16 +1,31 @@
 # Laravel Audit Log
 
-A comprehensive entity-level audit logging package for Laravel with support for MySQL databases.
+A comprehensive entity-level audit logging package for Laravel with model-specific tables for tracking changes in your application's data. Perfect for compliance, debugging, and maintaining data integrity in modern web applications.
+
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
+[![Total Downloads](https://img.shields.io/packagist/dt/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
+[![PHP Version](https://img.shields.io/packagist/php-v/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
+[![Laravel Version](https://img.shields.io/badge/Laravel-11.x|12.x-red.svg?style=flat-square)](https://laravel.com/)
+[![GitHub stars](https://img.shields.io/github/stars/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://github.com/iamfarhad/laravel-audit-log/stargazers)
+
+[![License](https://img.shields.io/packagist/l/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
+[![Maintained](https://img.shields.io/badge/maintained-yes-brightgreen.svg?style=flat-square)](https://github.com/iamfarhad/laravel-audit-log)
+[![Tests](https://img.shields.io/github/actions/workflow/status/iamfarhad/laravel-audit-log/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/iamfarhad/laravel-audit-log/actions/workflows/tests.yml)
+[![Code Style](https://img.shields.io/github/actions/workflow/status/iamfarhad/laravel-audit-log/coding-standards.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/iamfarhad/laravel-audit-log/actions/workflows/coding-standards.yml)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg?style=flat-square)](https://github.com/iamfarhad/laravel-audit-log)
+[![Scrutinizer Code Quality](https://img.shields.io/scrutinizer/g/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://scrutinizer-ci.com/g/iamfarhad/laravel-audit-log)
 
 ## Features
 
-- ✅ **Multiple Entity Support**: Audit any number of entities with dedicated log tables
+- ✅ **Multiple Entity Support**: Audit any number of entities with dedicated model-specific log tables
 - ✅ **Database Driver**: Built-in support for MySQL
 - ✅ **Model Log Handling**: Automatic tracking of model changes (create, update, delete, restore)
 - ✅ **Field Inclusion/Exclusion**: Fine-grained control over which fields to audit
 - ✅ **Causer Identification**: Automatic tracking of who made the changes
 - ✅ **Auto-Migration**: Automatic table creation for new entities
 - ✅ **SOLID Principles**: Clean, maintainable, and extensible architecture
+- ✅ **Batch Processing**: Support for batching audit logs for better performance
+- ✅ **Customizable Metadata**: Add additional context to your audit logs
 
 ## Requirements
 

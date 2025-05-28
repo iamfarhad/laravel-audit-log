@@ -1,8 +1,21 @@
 {
     "name": "iamfarhad/laravel-audit-log",
-    "description": "Entity-level audit logging package for Laravel with MySQL support",
+    "description": "Comprehensive entity-level audit logging package for Laravel applications with model-specific tables, field exclusion, and batch processing support",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "laravel",
+        "audit",
+        "logging",
+        "audit-trail",
+        "model-auditing",
+        "user-activity",
+        "change-tracking",
+        "database-history",
+        "data-integrity",
+        "activity-log",
+        "model-history"
+    ],
     "authors": [
         {
             "name": "Farhad Zand",
