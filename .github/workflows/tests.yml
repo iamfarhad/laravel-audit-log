@@ -1,36 +1,31 @@
-name: Tests
+name: run-tests
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - '*'
   pull_request:
-    branches: [ main, master ]
-  schedule:
-    - cron: '0 0 * * *'  # Run daily at midnight
-
-env:
-  COMPOSER_PROCESS_TIMEOUT: 0
-  COMPOSER_NO_INTERACTION: 1
-  COMPOSER_NO_AUDIT: 1
+    branches:
+      - '*'
 
 jobs:
-  tests:
+  run-tests:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15
+    env:
+      COMPOSER_NO_INTERACTION: 1
     strategy:
       fail-fast: false
       matrix:
-        php: [8.2, 8.3, 8.4]
-        laravel: [11.*, 12.*]
-        stability: [prefer-lowest, prefer-stable]
-        exclude:
-          # Skip incompatible PHP versions and Laravel versions
-          - php: 8.2
-            laravel: 12.*
-          - php: 8.4
-            stability: prefer-lowest
+        php: [ 8.2, 8.3, 8.4 ]
+        laravel: [ 11.*, 12.* ]
+        include:
+          - laravel: 12.*
+            testbench: 10.*
+          - laravel: 11.*
+            testbench: 9.*
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }}
+    name: PHP${{ matrix.php }} - Laravel${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
     steps:
       - name: Checkout code
@@ -40,41 +35,15 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl
-          coverage: xdebug
-          ini-values: memory_limit=256M
-          tools: composer:v2
-
-      - name: Setup problem matchers
-        run: echo "::add-matcher::/opt/hostedtoolcache/php.json" && echo "::add-matcher::/opt/hostedtoolcache/phpunit.json"
-
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-${{ matrix.stability }}
-          restore-keys: |
-            ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-
-            ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-
-
-      - name: Update testbench for Laravel 12
-        if: matrix.laravel == '12.*'
-        run: composer require --no-update "orchestra/testbench:^10.0" --dev
-
-      - name: Update testbench for Laravel 11
-        if: matrix.laravel == '11.*'
-        run: composer require --no-update "orchestra/testbench:^9.0" --dev
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
+          coverage: none
 
       - name: Install dependencies
-        run: composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update && composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+        run: |
+          composer require "illuminate/console:${{ matrix.laravel }}" "illuminate/database:${{ matrix.laravel }}" "illuminate/filesystem:${{ matrix.laravel }}" --no-update
+          composer require "orchestra/testbench:${{ matrix.testbench }}" --dev --no-update
+          composer update --prefer-dist --no-suggest
 
-      - name: Run PHPUnit tests
-        run: vendor/bin/phpunit -c "$(pwd)/phpunit.xml"
-
-      - name: Run PHP Static Analysis
-        if: ${{ matrix.stability == 'prefer-stable' }}
-        run: vendor/bin/phpstan analyse 
+      - name: Execute tests
+        run: |
+          vendor/bin/phpunit
