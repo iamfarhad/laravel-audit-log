@@ -42,7 +42,7 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit",
+        "test": "vendor/bin/phpunit -c phpunit.xml tests/",
         "analyse": "vendor/bin/phpstan analyse",
         "pint": "vendor/bin/pint",
         "pint:test": "vendor/bin/pint --test",

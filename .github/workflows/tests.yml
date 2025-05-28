@@ -73,7 +73,7 @@ jobs:
         run: composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update && composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Run PHPUnit tests
-        run: vendor/bin/phpunit
+        run: vendor/bin/phpunit -c phpunit.xml tests/
 
       - name: Run PHP Static Analysis
         if: ${{ matrix.stability == 'prefer-stable' }}
