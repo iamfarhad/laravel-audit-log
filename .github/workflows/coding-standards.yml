@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  COMPOSER_PROCESS_TIMEOUT: 0
+  COMPOSER_NO_INTERACTION: 1
+  COMPOSER_NO_AUDIT: 1
+
 jobs:
   lint:
     name: PHP CS & Static Analysis
@@ -21,6 +26,24 @@ jobs:
           php-version: 8.2
           extensions: dom, curl, libxml, mbstring, zip, pcntl, bcmath, intl
           coverage: none
+          tools: composer:v2
+
+      - name: Setup problem matchers
+        run: |
+          echo "::add-matcher::/opt/hostedtoolcache/php.json"
+        shell: /usr/bin/bash -e {0}
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-8.2-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-8.2-
 
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress

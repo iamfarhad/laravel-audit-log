@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Models\AuditLog;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Connection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use iamfarhad\LaravelAuditLog\Models\AuditLog;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class MySQLDriver implements AuditDriverInterface
 {
     private Connection $connection;
+
     private string $tablePrefix;
+
     private string $tableSuffix;
 
     public function __construct(array $config = [])
@@ -35,7 +36,7 @@ final class MySQLDriver implements AuditDriverInterface
         Log::info('Entering store method for audit log', [
             'entity_type' => $log->getEntityType(),
             'entity_id' => $log->getEntityId(),
-            'action' => $log->getAction()
+            'action' => $log->getAction(),
         ]);
 
         $tableName = $this->getTableName($log->getEntityType());
@@ -54,14 +55,14 @@ final class MySQLDriver implements AuditDriverInterface
             Log::debug('Audit log inserted into database', [
                 'table' => $tableName,
                 'entity_id' => $log->getEntityId(),
-                'action' => $log->getAction()
+                'action' => $log->getAction(),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to store audit log in database', [
                 'table' => $tableName,
                 'entity_id' => $log->getEntityId(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
@@ -70,8 +71,8 @@ final class MySQLDriver implements AuditDriverInterface
     /**
      * Legacy method to maintain interface compatibility.
      * Simply stores logs one by one instead of in batch.
-     * 
-     * @param array<AuditLogInterface> $logs
+     *
+     * @param  array<AuditLogInterface>  $logs
      */
     public function storeBatch(array $logs): void
     {
@@ -84,7 +85,7 @@ final class MySQLDriver implements AuditDriverInterface
     {
         $tableName = $this->getTableName($entityType);
 
-        if (!Schema::hasTable($tableName)) {
+        if (! Schema::hasTable($tableName)) {
             return [];
         }
 
@@ -148,11 +149,11 @@ final class MySQLDriver implements AuditDriverInterface
      */
     public function ensureStorageExists(string $entityClass): void
     {
-        if (!config('audit-logger.auto_migration', true)) {
+        if (! config('audit-logger.auto_migration', true)) {
             return;
         }
 
-        if (!$this->storageExistsForEntity($entityClass)) {
+        if (! $this->storageExistsForEntity($entityClass)) {
             $this->createStorageForEntity($entityClass);
         }
     }
@@ -165,7 +166,7 @@ final class MySQLDriver implements AuditDriverInterface
         // Handle pluralization
         $tableName = Str::plural($className);
 
-        return $this->tablePrefix . $tableName . $this->tableSuffix;
+        return $this->tablePrefix.$tableName.$this->tableSuffix;
     }
 
     private function applyFilters(Builder $query, array $options): void

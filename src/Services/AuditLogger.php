@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
-use iamfarhad\LaravelAuditLog\Drivers\MongoDBDriver;
-use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use InvalidArgumentException;
-use iamfarhad\LaravelAuditLog\Config\AuditLoggerConfig;
-use iamfarhad\LaravelAuditLog\DTOs\AuditLogDto;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use iamfarhad\LaravelAuditLog\Models\AuditLog;
-use Illuminate\Support\Carbon;
+use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
+use iamfarhad\LaravelAuditLog\Drivers\MongoDBDriver;
+use iamfarhad\LaravelAuditLog\Config\AuditLoggerConfig;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
 final class AuditLogger
 {
     private array $drivers = [];
+
     private ?string $defaultDriver = null;
 
     public function __construct(
@@ -103,7 +103,7 @@ final class AuditLogger
     {
         $name = $name ?? $this->defaultDriver;
 
-        if (!isset($this->drivers[$name])) {
+        if (! isset($this->drivers[$name])) {
             $this->drivers[$name] = $this->createDriver($name);
         }
 

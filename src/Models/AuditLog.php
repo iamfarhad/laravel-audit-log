@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Models;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 
 final class AuditLog implements AuditLogInterface
 {

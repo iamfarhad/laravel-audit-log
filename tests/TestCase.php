@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests;
 
-use iamfarhad\LaravelAuditLog\AuditLoggerServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use iamfarhad\LaravelAuditLog\AuditLoggerServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -26,9 +26,9 @@ abstract class TestCase extends Orchestra
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
 
         // Setup MongoDB connection for testing

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use iamfarhad\LaravelAuditLog\Models\AuditLog;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use Illuminate\Support\Carbon;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use iamfarhad\LaravelAuditLog\Models\AuditLog;
 
-class AuditLogTest extends TestCase
+final class AuditLogTest extends TestCase
 {
     public function test_can_create_audit_log(): void
     {

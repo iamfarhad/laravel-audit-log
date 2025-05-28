@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Models\AuditLog;
 use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Connection;
 use MongoDB\BSON\UTCDateTime;
+use Illuminate\Database\Connection;
+use iamfarhad\LaravelAuditLog\Models\AuditLog;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class MongoDBDriver implements AuditDriverInterface
 {
     private Connection $connection;
+
     private string $collectionPrefix;
+
     private string $collectionSuffix;
 
     public function __construct(array $config = [])
@@ -45,8 +46,8 @@ final class MongoDBDriver implements AuditDriverInterface
     /**
      * Legacy method to maintain interface compatibility.
      * Simply stores logs one by one instead of in batch.
-     * 
-     * @param array<AuditLogInterface> $logs
+     *
+     * @param  array<AuditLogInterface>  $logs
      */
     public function storeBatch(array $logs): void
     {
@@ -137,7 +138,7 @@ final class MongoDBDriver implements AuditDriverInterface
     {
         // MongoDB collections are created automatically when data is inserted
         // No need to explicitly create them, just check if auto_migration is enabled
-        if (!config('audit-logger.auto_migration', true)) {
+        if (! config('audit-logger.auto_migration', true)) {
             return;
         }
 
@@ -148,6 +149,7 @@ final class MongoDBDriver implements AuditDriverInterface
     {
         $baseName = Str::snake(class_basename($entityType));
         $pluralName = Str::plural($baseName);
-        return $this->collectionPrefix . $pluralName . $this->collectionSuffix;
+
+        return $this->collectionPrefix.$pluralName.$this->collectionSuffix;
     }
 }

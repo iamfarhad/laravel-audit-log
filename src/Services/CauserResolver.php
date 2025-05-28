@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
-use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 use Illuminate\Support\Facades\Auth;
+use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
 final class CauserResolver implements CauserResolverInterface
 {
@@ -19,13 +19,13 @@ final class CauserResolver implements CauserResolverInterface
         $guard = $this->guard ?? config('audit-logger.causer.guard');
         $auth = $guard ? Auth::guard($guard) : Auth::guard();
 
-        if (!$auth->check()) {
+        if (! $auth->check()) {
             return ['type' => null, 'id' => null];
         }
 
         $user = $auth->user();
 
-        if (!$user) {
+        if (! $user) {
             return ['type' => null, 'id' => null];
         }
 

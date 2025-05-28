@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  *
  * @see \iamfarhad\LaravelAuditLog\Services\AuditLogger
  */
-class AuditLogger extends Facade
+final class AuditLogger extends Facade
 {
     protected static function getFacadeAccessor(): string
     {

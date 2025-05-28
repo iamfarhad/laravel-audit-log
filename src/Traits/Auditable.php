@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Traits;
 
-use App\Models\User;
-use iamfarhad\LaravelAuditLog\Contracts\AuditableInterface;
-use iamfarhad\LaravelAuditLog\Events\ModelAudited;
-use Illuminate\Database\Eloquent\Model;
-use iamfarhad\LaravelAuditLog\Facades\AuditLogger;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Events\ModelAudited;
+use iamfarhad\LaravelAuditLog\Contracts\AuditableInterface;
 
 /**
  * Trait that implements the AuditableInterface to make models auditable.
@@ -25,9 +21,9 @@ trait Auditable
     {
         static::created(function (Model $model) {
             if ($model->isAuditingEnabled()) {
-                Log::debug("Dispatching ModelAudited", [
+                Log::debug('Dispatching ModelAudited', [
                     'model' => get_class($model),
-                    'action' => 'created'
+                    'action' => 'created',
                 ]);
                 event(new ModelAudited($model, 'created', null, $model->getAttributes()));
             }
@@ -40,10 +36,10 @@ trait Auditable
 
                 $oldValues = array_intersect_key($oldValues, $newValues);
 
-                if (!empty($newValues)) {
-                    Log::debug("Dispatching ModelAudited", [
+                if (! empty($newValues)) {
+                    Log::debug('Dispatching ModelAudited', [
                         'model' => get_class($model),
-                        'action' => 'updated'
+                        'action' => 'updated',
                     ]);
                     event(new ModelAudited($model, 'updated', $oldValues, $newValues));
                 }
@@ -52,9 +48,9 @@ trait Auditable
 
         static::deleted(function (Model $model) {
             if ($model->isAuditingEnabled()) {
-                Log::debug("Dispatching ModelAudited", [
+                Log::debug('Dispatching ModelAudited', [
                     'model' => get_class($model),
-                    'action' => 'deleted'
+                    'action' => 'deleted',
                 ]);
                 event(new ModelAudited($model, 'deleted', $model->getOriginal(), null));
             }
@@ -63,9 +59,9 @@ trait Auditable
         if (method_exists(static::class, 'restored')) {
             static::restored(function (Model $model) {
                 if ($model->isAuditingEnabled()) {
-                    Log::debug("Dispatching ModelAudited", [
+                    Log::debug('Dispatching ModelAudited', [
                         'model' => get_class($model),
-                        'action' => 'restored'
+                        'action' => 'restored',
                     ]);
                     event(new ModelAudited($model, 'restored', null, $model->getAttributes()));
                 }
@@ -78,7 +74,7 @@ trait Auditable
      */
     public function isAuditingEnabled(): bool
     {
-        if (!property_exists($this, 'auditingEnabled')) {
+        if (! property_exists($this, 'auditingEnabled')) {
             return true;
         }
 
@@ -91,6 +87,7 @@ trait Auditable
     public function enableAuditing(): self
     {
         $this->auditingEnabled = true;
+
         return $this;
     }
 
@@ -100,6 +97,7 @@ trait Auditable
     public function disableAuditing(): self
     {
         $this->auditingEnabled = false;
+
         return $this;
     }
 
@@ -140,6 +138,7 @@ trait Auditable
 
         // Otherwise, include only specified fields minus excluded
         $included = array_intersect_key($attributes, array_flip($include));
+
         return array_diff_key($included, array_flip($exclude));
     }
 
