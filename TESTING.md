@@ -32,7 +32,7 @@ If you prefer to run tests manually within the package directory:
 
 ```bash
 # Run PHPUnit tests
-vendor/bin/phpunit -c phpunit.xml tests/
+vendor/bin/phpunit -c phpunit.xml
 
 # Run Laravel Pint code style check
 vendor/bin/pint --test
@@ -74,7 +74,8 @@ These workflows run automatically on push to main/master branches, on pull reque
 
 ## Notes
 
-- When running PHPUnit tests with PHPUnit 11.x, you must explicitly specify the configuration file with `-c phpunit.xml` and the test directory with `tests/`.
+- When running PHPUnit 11.x, you must explicitly specify the configuration file with `-c phpunit.xml`.
+- For PHPUnit coverage with Xdebug, make sure to set the environment variable `XDEBUG_MODE=coverage`.
 - When running PHPStan, you may need to increase the PHP memory limit if you encounter memory issues.
 - For test coverage reports, ensure Xdebug is installed and enabled with coverage mode.
 - Tests are run with `XDEBUG_MODE=coverage` to enable coverage reports. 

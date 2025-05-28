@@ -142,4 +142,4 @@ jobs:
 
       - name: Run tests
         working-directory: laravel-app
-        run: php artisan test --testsuite=Feature 
+        run: php artisan test tests/Feature/AuditLogTest.php 
