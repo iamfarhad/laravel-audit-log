@@ -33,16 +33,17 @@ jobs:
           echo "::add-matcher::/opt/hostedtoolcache/php.json"
         shell: /usr/bin/bash -e {0}
 
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
-          path: /home/runner/.cache/composer/files
+          path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-8.2-${{ hashFiles('**/composer.json') }}
           restore-keys: |
             ${{ runner.os }}-composer-8.2-
-          enableCrossOsArchive: false
-          fail-on-cache-miss: false
-          lookup-only: false
 
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress
