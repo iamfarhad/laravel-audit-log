@@ -21,7 +21,10 @@
     "require-dev": {
         "phpunit/phpunit": "^10.0|^11.0",
         "orchestra/testbench": "^8.0|^9.0",
-        "mockery/mockery": "^1.6"
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan-strict-rules": "^1.5",
+        "laravel/pint": "^1.13"
     },
     "autoload": {
         "psr-4": {
@@ -39,6 +42,16 @@
                 "iamfarhad\\LaravelAuditLog\\AuditLoggerServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "analyse": "vendor/bin/phpstan analyse",
+        "pint": "vendor/bin/pint",
+        "pint:test": "vendor/bin/pint --test",
+        "cs": [
+            "@pint",
+            "@analyse"
+        ]
     },
     "minimum-stability": "stable",
     "prefer-stable": true

@@ -400,6 +400,44 @@ For MongoDB, collections are created with similar fields and appropriate indexes
    composer require mongodb/laravel-mongodb
    ```
 
+## Development
+
+### Testing
+
+Run the tests with:
+
+```bash
+composer test
+```
+
+### Code Style
+
+This package follows the Laravel coding style. You can check and fix the code style with:
+
+```bash
+# Check code style
+composer pint:test
+
+# Fix code style issues
+composer pint
+```
+
+### Static Analysis
+
+Run static analysis with PHPStan:
+
+```bash
+composer analyse
+```
+
+### Continuous Integration
+
+This package uses GitHub Actions for continuous integration. The following checks are run on each push and pull request:
+
+- **Tests**: PHPUnit tests against multiple PHP and Laravel versions
+- **Coding Standards**: Laravel Pint for code style
+- **Static Analysis**: PHPStan for static analysis
+
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
