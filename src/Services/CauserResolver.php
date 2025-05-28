@@ -17,15 +17,16 @@ final class CauserResolver implements CauserResolverInterface
     public function resolve(): array
     {
         $guard = $this->guard ?? config('audit-logger.causer.guard');
-        $auth = $guard ? Auth::guard($guard) : Auth::guard();
+        $auth = $guard !== null ? Auth::guard($guard) : Auth::guard();
 
-        if (! $auth->check()) {
+        $isAuthenticated = $auth->check();
+        if (!$isAuthenticated) {
             return ['type' => null, 'id' => null];
         }
 
         $user = $auth->user();
 
-        if (! $user) {
+        if ($user === null) {
             return ['type' => null, 'id' => null];
         }
 

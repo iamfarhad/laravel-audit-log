@@ -10,10 +10,8 @@ use Illuminate\Support\Facades\Log;
 use iamfarhad\LaravelAuditLog\Models\AuditLog;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\Drivers\MongoDBDriver;
-use iamfarhad\LaravelAuditLog\Config\AuditLoggerConfig;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
 final class AuditLogger
 {
@@ -22,9 +20,7 @@ final class AuditLogger
     private ?string $defaultDriver = null;
 
     public function __construct(
-        private readonly CauserResolverInterface $causerResolver,
         private readonly array $config = [],
-        // private readonly AuditLoggerConfig $auditLoggerConfig,
     ) {
         $this->defaultDriver = $config['default'] ?? 'mysql';
     }
@@ -123,9 +119,4 @@ final class AuditLogger
             default => throw new InvalidArgumentException("Unsupported audit driver: {$name}")
         };
     }
-
-    // public function setStorage(AuditStorageInterface $storage): void
-    // {
-    //     $this->storage = $storage;
-    // }
 }

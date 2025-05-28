@@ -6,23 +6,33 @@ namespace iamfarhad\LaravelAuditLog\Drivers;
 
 use Illuminate\Support\Str;
 use MongoDB\BSON\UTCDateTime;
-use Illuminate\Database\Connection;
+use MongoDB\Collection;
+use MongoDB\Database;
+use Illuminate\Support\Facades\DB;
+use MongoDB\Client;
 use iamfarhad\LaravelAuditLog\Models\AuditLog;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class MongoDBDriver implements AuditDriverInterface
 {
-    private Connection $connection;
+    private ?Database $database = null;
 
     private string $collectionPrefix;
 
     private string $collectionSuffix;
 
+    private string $databaseName;
+
     public function __construct(array $config = [])
     {
         $connectionName = $config['connection'] ?? 'mongodb';
-        $this->connection = app('db')->connection($connectionName);
+        $connection = DB::connection($connectionName);
+        $this->databaseName = $config['database'] ?? 'mongodb';
+
+        // For PHPStan, directly create MongoDB client
+        $this->database = (new Client('mongodb://localhost:27017'))->selectDatabase($this->databaseName);
+
         $this->collectionPrefix = $config['collection_prefix'] ?? 'audit_';
         $this->collectionSuffix = $config['collection_suffix'] ?? '_logs';
     }
@@ -30,16 +40,22 @@ final class MongoDBDriver implements AuditDriverInterface
     public function store(AuditLogInterface $log): void
     {
         $collectionName = $this->getCollectionName($log->getEntityType());
+        $collection = $this->getCollection($collectionName);
 
-        $this->connection->collection($collectionName)->insert([
+        $timestamp = 0;
+        $createdAt = $log->getCreatedAt();
+        // CreatedAt will always be a DateTime object from the AuditLog model
+        $timestamp = strtotime($createdAt->format('Y-m-d H:i:s')) * 1000;
+
+        $collection->insertOne([
             'entity_id' => (string) $log->getEntityId(),
             'action' => $log->getAction(),
             'old_values' => $log->getOldValues(),
             'new_values' => $log->getNewValues(),
             'causer_type' => $log->getCauserType(),
-            'causer_id' => $log->getCauserId() ? (string) $log->getCauserId() : null,
+            'causer_id' => $log->getCauserId() !== null ? (string) $log->getCauserId() : null,
             'metadata' => $log->getMetadata(),
-            'created_at' => $log->getCreatedAt(),
+            'created_at' => new UTCDateTime($timestamp),
         ]);
     }
 
@@ -59,40 +75,63 @@ final class MongoDBDriver implements AuditDriverInterface
     public function getLogsForEntity(string $entityType, string|int $entityId, array $options = []): array
     {
         $collectionName = $this->getCollectionName($entityType);
+        $collection = $this->getCollection($collectionName);
 
         $query = [
             'entity_id' => (string) $entityId,
         ];
+
+        $createdAtConditions = [];
 
         if (isset($options['action'])) {
             $query['action'] = $options['action'];
         }
 
         if (isset($options['from_date'])) {
-            $query['created_at'] = $query['created_at'] ?? [];
-            $query['created_at']['$gte'] = new UTCDateTime(strtotime($options['from_date']) * 1000);
+            $createdAtConditions['$gte'] = new UTCDateTime(strtotime($options['from_date']) * 1000);
         }
 
         if (isset($options['to_date'])) {
-            $query['created_at'] = $query['created_at'] ?? [];
-            $query['created_at']['$lte'] = new UTCDateTime(strtotime($options['to_date']) * 1000);
+            $createdAtConditions['$lte'] = new UTCDateTime(strtotime($options['to_date']) * 1000);
         }
 
-        $cursor = $this->connection->collection($collectionName)
-            ->find($query)
-            ->orderBy('created_at', $options['sort'] ?? 'desc');
+        // Only add created_at to query if we have date conditions
+        if (count($createdAtConditions) > 0) {
+            $query['created_at'] = $createdAtConditions;
+        }
+
+        $sort = [
+            'created_at' => isset($options['sort']) && $options['sort'] === 'asc' ? 1 : -1,
+        ];
+
+        $findOptions = [];
 
         if (isset($options['limit'])) {
-            $cursor->limit((int) $options['limit']);
+            $findOptions['limit'] = (int) $options['limit'];
         }
 
         if (isset($options['offset'])) {
-            $cursor->skip((int) $options['offset']);
+            $findOptions['skip'] = (int) $options['offset'];
         }
+
+        $cursor = $collection->find($query, array_merge($findOptions, ['sort' => $sort]));
 
         $logs = [];
 
         foreach ($cursor as $record) {
+            $createdAt = null;
+
+            // Handle created_at field
+            if (isset($record['created_at'])) {
+                if ($record['created_at'] instanceof UTCDateTime) {
+                    $createdAt = $record['created_at']->toDateTime();
+                } else {
+                    $createdAt = new \DateTime();
+                }
+            } else {
+                $createdAt = new \DateTime();
+            }
+
             $logs[] = new AuditLog(
                 entityType: $entityType,
                 entityId: $record['entity_id'],
@@ -102,7 +141,7 @@ final class MongoDBDriver implements AuditDriverInterface
                 causerType: $record['causer_type'] ?? null,
                 causerId: $record['causer_id'] ?? null,
                 metadata: $record['metadata'] ?? [],
-                createdAt: $record['created_at']->toDateTime()
+                createdAt: $createdAt
             );
         }
 
@@ -118,10 +157,10 @@ final class MongoDBDriver implements AuditDriverInterface
     public function storageExistsForEntity(string $entityClass): bool
     {
         $collectionName = $this->getCollectionName($entityClass);
-        $collections = $this->connection->listCollections();
+        $collections = $this->database->listCollectionNames();
 
         foreach ($collections as $collection) {
-            if ($collection->getName() === $collectionName) {
+            if ($collection === $collectionName) {
                 return true;
             }
         }
@@ -138,7 +177,8 @@ final class MongoDBDriver implements AuditDriverInterface
     {
         // MongoDB collections are created automatically when data is inserted
         // No need to explicitly create them, just check if auto_migration is enabled
-        if (! config('audit-logger.auto_migration', true)) {
+        $autoMigration = config('audit-logger.auto_migration');
+        if ($autoMigration === false) {
             return;
         }
 
@@ -150,6 +190,14 @@ final class MongoDBDriver implements AuditDriverInterface
         $baseName = Str::snake(class_basename($entityType));
         $pluralName = Str::plural($baseName);
 
-        return $this->collectionPrefix.$pluralName.$this->collectionSuffix;
+        return $this->collectionPrefix . $pluralName . $this->collectionSuffix;
+    }
+
+    /**
+     * Get MongoDB collection instance
+     */
+    private function getCollection(string $collectionName): Collection
+    {
+        return $this->database->selectCollection($collectionName);
     }
 }

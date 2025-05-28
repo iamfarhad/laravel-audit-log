@@ -42,11 +42,14 @@ final class MySQLDriver implements AuditDriverInterface
         $tableName = $this->getTableName($log->getEntityType());
 
         try {
+            $oldValues = $log->getOldValues();
+            $newValues = $log->getNewValues();
+
             $this->connection->table($tableName)->insert([
                 'entity_id' => $log->getEntityId(),
                 'action' => $log->getAction(),
-                'old_values' => $log->getOldValues() ? json_encode($log->getOldValues()) : null,
-                'new_values' => $log->getNewValues() ? json_encode($log->getNewValues()) : null,
+                'old_values' => $oldValues !== null ? json_encode($oldValues) : null,
+                'new_values' => $newValues !== null ? json_encode($newValues) : null,
                 'causer_type' => $log->getCauserType(),
                 'causer_id' => $log->getCauserId(),
                 'metadata' => json_encode($log->getMetadata()),
@@ -98,15 +101,19 @@ final class MySQLDriver implements AuditDriverInterface
         $logs = [];
 
         foreach ($records as $record) {
+            $oldValues = $record->old_values !== null ? json_decode($record->old_values, true) : null;
+            $newValues = $record->new_values !== null ? json_decode($record->new_values, true) : null;
+            $metadata = $record->metadata !== null ? json_decode($record->metadata, true) : [];
+
             $logs[] = new AuditLog(
                 entityType: $entityType,
                 entityId: $record->entity_id,
                 action: $record->action,
-                oldValues: $record->old_values ? json_decode($record->old_values, true) : null,
-                newValues: $record->new_values ? json_decode($record->new_values, true) : null,
+                oldValues: $oldValues,
+                newValues: $newValues,
                 causerType: $record->causer_type,
                 causerId: $record->causer_id,
-                metadata: json_decode($record->metadata, true) ?? [],
+                metadata: $metadata,
                 createdAt: new Carbon($record->created_at)
             );
         }
@@ -149,7 +156,8 @@ final class MySQLDriver implements AuditDriverInterface
      */
     public function ensureStorageExists(string $entityClass): void
     {
-        if (! config('audit-logger.auto_migration', true)) {
+        $autoMigration = config('audit-logger.auto_migration');
+        if ($autoMigration === false) {
             return;
         }
 
@@ -166,7 +174,7 @@ final class MySQLDriver implements AuditDriverInterface
         // Handle pluralization
         $tableName = Str::plural($className);
 
-        return $this->tablePrefix.$tableName.$this->tableSuffix;
+        return $this->tablePrefix . $tableName . $this->tableSuffix;
     }
 
     private function applyFilters(Builder $query, array $options): void

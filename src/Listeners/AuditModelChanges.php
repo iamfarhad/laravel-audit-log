@@ -39,11 +39,11 @@ final class AuditModelChanges
             }
 
             // Filter attributes based on include/exclude rules
-            $oldValues = $event->oldValues ? $model->getAuditableAttributes($event->oldValues) : null;
-            $newValues = $event->newValues ? $model->getAuditableAttributes($event->newValues) : null;
+            $oldValues = $event->oldValues !== null ? $model->getAuditableAttributes($event->oldValues) : null;
+            $newValues = $event->newValues !== null ? $model->getAuditableAttributes($event->newValues) : null;
 
             // Skip if no changes after filtering
-            if ($event->action === 'updated' && empty($newValues)) {
+            if ($event->action === 'updated' && ($newValues === null || count($newValues) === 0)) {
                 Log::debug('No changes after filtering, skipping audit log');
 
                 return;
