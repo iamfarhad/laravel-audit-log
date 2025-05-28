@@ -174,7 +174,7 @@ final class MySQLDriver implements AuditDriverInterface
         // Handle pluralization
         $tableName = Str::plural($className);
 
-        return $this->tablePrefix . $tableName . $this->tableSuffix;
+        return $this->tablePrefix.$tableName.$this->tableSuffix;
     }
 
     private function applyFilters(Builder $query, array $options): void

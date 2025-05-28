@@ -20,7 +20,7 @@ final class CauserResolver implements CauserResolverInterface
         $auth = $guard !== null ? Auth::guard($guard) : Auth::guard();
 
         $isAuthenticated = $auth->check();
-        if (!$isAuthenticated) {
+        if (! $isAuthenticated) {
             return ['type' => null, 'id' => null];
         }
 

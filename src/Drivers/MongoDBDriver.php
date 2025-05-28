@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
+use MongoDB\Client;
+use MongoDB\Database;
+use MongoDB\Collection;
 use Illuminate\Support\Str;
 use MongoDB\BSON\UTCDateTime;
-use MongoDB\Collection;
-use MongoDB\Database;
 use Illuminate\Support\Facades\DB;
-use MongoDB\Client;
 use iamfarhad\LaravelAuditLog\Models\AuditLog;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
@@ -126,10 +126,10 @@ final class MongoDBDriver implements AuditDriverInterface
                 if ($record['created_at'] instanceof UTCDateTime) {
                     $createdAt = $record['created_at']->toDateTime();
                 } else {
-                    $createdAt = new \DateTime();
+                    $createdAt = new \DateTime;
                 }
             } else {
-                $createdAt = new \DateTime();
+                $createdAt = new \DateTime;
             }
 
             $logs[] = new AuditLog(
@@ -190,7 +190,7 @@ final class MongoDBDriver implements AuditDriverInterface
         $baseName = Str::snake(class_basename($entityType));
         $pluralName = Str::plural($baseName);
 
-        return $this->collectionPrefix . $pluralName . $this->collectionSuffix;
+        return $this->collectionPrefix.$pluralName.$this->collectionSuffix;
     }
 
     /**
