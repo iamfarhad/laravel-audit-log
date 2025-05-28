@@ -9,9 +9,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option controls the default audit driver that will be used to store
-    | audit logs. You may set this to any of the drivers defined below.
+    | audit logs.
     |
-    | Supported: "mysql", "mongodb"
+    | Supported: "mysql"
     |
     */
     'default' => env('AUDIT_DRIVER', 'mysql'),
@@ -29,12 +29,6 @@ return [
             'connection' => env('AUDIT_MYSQL_CONNECTION', config('database.default')),
             'table_prefix' => env('AUDIT_TABLE_PREFIX', 'audit_'),
             'table_suffix' => env('AUDIT_TABLE_SUFFIX', '_logs'),
-        ],
-
-        'mongodb' => [
-            'connection' => env('AUDIT_MONGODB_CONNECTION', 'mongodb'),
-            'collection_prefix' => env('AUDIT_COLLECTION_PREFIX', 'audit_'),
-            'collection_suffix' => env('AUDIT_COLLECTION_SUFFIX', '_logs'),
         ],
     ],
 

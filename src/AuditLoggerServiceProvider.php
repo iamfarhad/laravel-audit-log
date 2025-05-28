@@ -20,14 +20,14 @@ final class AuditLoggerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/Config/audit-logger.php',
+            __DIR__ . '/../config/audit-logger.php',
             'audit-logger'
         );
 
         // Register the causer resolver
         $this->app->singleton(
             CauserResolverInterface::class,
-            fn ($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
+            fn($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
                 ? $app->make($app['config']['audit-logger.causer']['resolver'])
                 : new CauserResolver(
                     guard: $app['config']['audit-logger.causer']['guard'] ?? null,
@@ -36,7 +36,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         );
 
         // Register the main audit logger service
-        $this->app->singleton('audit-logger', fn ($app) => new AuditLogger(
+        $this->app->singleton('audit-logger', fn($app) => new AuditLogger(
             config: $app['config']['audit-logger']
         ));
 
@@ -51,7 +51,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Publish config
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/Config/audit-logger.php' => config_path('audit-logger.php'),
+                __DIR__ . '/../config/audit-logger.php' => config_path('audit-logger.php'),
             ], 'audit-logger-config');
         }
 

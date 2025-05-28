@@ -1,23 +1,22 @@
 # Laravel Audit Log
 
-A comprehensive entity-level audit logging package for Laravel with support for MySQL and MongoDB databases.
+A comprehensive entity-level audit logging package for Laravel with support for MySQL databases.
 
 ## Features
 
-- ✅ **Multiple Entity Support**: Audit any number of entities with dedicated log tables/collections
-- ✅ **Database Drivers**: Built-in support for MySQL and MongoDB
+- ✅ **Multiple Entity Support**: Audit any number of entities with dedicated log tables
+- ✅ **Database Driver**: Built-in support for MySQL
 - ✅ **Model Log Handling**: Automatic tracking of model changes (create, update, delete, restore)
 - ✅ **Field Inclusion/Exclusion**: Fine-grained control over which fields to audit
 - ✅ **Causer Identification**: Automatic tracking of who made the changes
-- ✅ **Auto-Migration**: Automatic table/collection creation for new entities
+- ✅ **Auto-Migration**: Automatic table creation for new entities
 - ✅ **SOLID Principles**: Clean, maintainable, and extensible architecture
 
 ## Requirements
 
 - PHP >= 8.2
 - Laravel 11.x or 12.x
-- MySQL 8.0+ (for MySQL driver)
-- MongoDB 4.4+ (for MongoDB driver, optional)
+- MySQL 8.0+
 
 ## Installation
 
@@ -37,21 +36,13 @@ php artisan vendor:publish --tag=audit-logger-config
 
 This will create a `config/audit-logger.php` configuration file.
 
-### Step 3: Optional - Install MongoDB Support
-
-If you plan to use MongoDB as a driver, install the MongoDB Laravel package:
-
-```bash
-composer require mongodb/laravel-mongodb
-```
-
 ## Configuration
 
 The configuration file (`config/audit-logger.php`) allows you to customize various aspects of the package:
 
 ```php
 return [
-    // Default driver: 'mysql' or 'mongodb'
+    // Default driver: 'mysql'
     'default' => env('AUDIT_DRIVER', 'mysql'),
 
     // Driver configurations
@@ -60,11 +51,6 @@ return [
             'connection' => env('AUDIT_MYSQL_CONNECTION', config('database.default')),
             'table_prefix' => env('AUDIT_TABLE_PREFIX', 'audit_'),
             'table_suffix' => env('AUDIT_TABLE_SUFFIX', '_logs'),
-        ],
-        'mongodb' => [
-            'connection' => env('AUDIT_MONGODB_CONNECTION', 'mongodb'),
-            'collection_prefix' => env('AUDIT_COLLECTION_PREFIX', 'audit_'),
-            'collection_suffix' => env('AUDIT_COLLECTION_SUFFIX', '_logs'),
         ],
     ],
 
@@ -84,6 +70,51 @@ return [
         'resolver' => null, // custom resolver class
     ],
 ];
+```
+
+### Helper Methods for Retrieving Logs
+
+You can add helper methods to your models to make retrieving audit logs easier:
+
+```php
+/**
+ * Get the audit logs for this model.
+ */
+public function auditLogs(array $options = [])
+{
+    return AuditLogger::getLogsForEntity(
+        entityType: static::class,
+        entityId: $this->getKey(),
+        options: $options
+    );
+}
+
+/**
+ * Get the most recent audit logs for this model.
+ */
+public function recentAuditLogs(int $limit = 10)
+{
+    return AuditLogger::getLogsForEntity(
+        entityType: static::class,
+        entityId: $this->getKey(),
+        options: [
+            'limit' => $limit,
+            'from_date' => now()->subDays(30)->toDateString(),
+        ]
+    );
+}
+
+/**
+ * Get audit logs for a specific action.
+ */
+public function getActionLogs(string $action)
+{
+    return AuditLogger::getLogsForEntity(
+        entityType: static::class,
+        entityId: $this->getKey(),
+        options: ['action' => $action]
+    );
+}
 ```
 
 ## Basic Usage
@@ -290,63 +321,6 @@ Register it in the config:
 ],
 ```
 
-### Using Different Drivers
-
-You can use different drivers for different operations:
-
-```php
-// Use MongoDB driver for specific operation
-AuditLogger::driver('mongodb')->log(...);
-
-// Use MySQL driver
-AuditLogger::driver('mysql')->log(...);
-```
-
-### Helper Methods for Retrieving Logs
-
-You can add helper methods to your models to make retrieving audit logs easier:
-
-```php
-/**
- * Get the audit logs for this model.
- */
-public function auditLogs(array $options = [])
-{
-    return AuditLogger::getLogsForEntity(
-        entityType: static::class,
-        entityId: $this->getKey(),
-        options: $options
-    );
-}
-
-/**
- * Get the most recent audit logs for this model.
- */
-public function recentAuditLogs(int $limit = 10)
-{
-    return AuditLogger::getLogsForEntity(
-        entityType: static::class,
-        entityId: $this->getKey(),
-        options: [
-            'limit' => $limit,
-            'from_date' => now()->subDays(30)->toDateString(),
-        ]
-    );
-}
-
-/**
- * Get audit logs for a specific action.
- */
-public function getActionLogs(string $action)
-{
-    return AuditLogger::getLogsForEntity(
-        entityType: static::class,
-        entityId: $this->getKey(),
-        options: ['action' => $action]
-    );
-}
-```
-
 ## Database Schema
 
 ### MySQL
@@ -370,10 +344,6 @@ CREATE TABLE audit_products_logs (
 );
 ```
 
-### MongoDB
-
-For MongoDB, collections are created with similar fields and appropriate indexes.
-
 ## Troubleshooting
 
 ### Common Issues
@@ -394,11 +364,6 @@ For MongoDB, collections are created with similar fields and appropriate indexes
 2. **Logs not appearing**: Check if:
    - Model uses `Auditable` trait
    - Auditing is enabled on the model instance
-
-3. **MongoDB driver issues**: Ensure you've installed the MongoDB package:
-   ```bash
-   composer require mongodb/laravel-mongodb
-   ```
 
 ## Development
 

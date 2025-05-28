@@ -9,7 +9,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use iamfarhad\LaravelAuditLog\Models\AuditLog;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
-use iamfarhad\LaravelAuditLog\Drivers\MongoDBDriver;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
@@ -115,7 +114,6 @@ final class AuditLogger
 
         return match ($name) {
             'mysql' => app(MySQLDriver::class, ['config' => $config]),
-            'mongodb' => new MongoDBDriver($config),
             default => throw new InvalidArgumentException("Unsupported audit driver: {$name}")
         };
     }
