@@ -4,26 +4,25 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Feature;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\Post;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
 
 final class AuditLogFeatureTest extends TestCase
 {
     /**
      * Get the latest audit log for the given model
-     * 
-     * @param string $modelClass Class name of the model
+     *
+     * @param  string  $modelClass  Class name of the model
      * @return object|null The audit log record
      */
     protected function getLatestAuditLog(string $modelClass): ?object
     {
         // Convert class name to table name (e.g., User -> audit_users_logs)
         $className = class_basename($modelClass);
-        $tableName = 'audit_' . Str::snake(Str::plural($className)) . '_logs';
+        $tableName = 'audit_'.Str::snake(Str::plural($className)).'_logs';
 
         return DB::table($tableName)
             ->latest('id')

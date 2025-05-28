@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests;
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
 use iamfarhad\LaravelAuditLog\AuditLoggerServiceProvider;
 
@@ -80,7 +80,7 @@ abstract class TestCase extends Orchestra
         // Create model-specific audit tables
         $auditTables = [
             'audit_users_logs',
-            'audit_posts_logs'
+            'audit_posts_logs',
         ];
 
         foreach ($auditTables as $tableName) {

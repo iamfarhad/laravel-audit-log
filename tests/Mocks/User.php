@@ -24,7 +24,7 @@ final class User extends Model
     // Define fields to exclude from audit logs
     protected array $auditExclude = [
         'password',
-        'remember_token'
+        'remember_token',
     ];
 
     // Property to control auditing
