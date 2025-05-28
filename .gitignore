@@ -4,7 +4,6 @@
 /coverage
 /.phpunit.result.cache
 /.phpunit.cache
-/phpunit.xml
 .DS_Store
 Thumbs.db
 *.log
