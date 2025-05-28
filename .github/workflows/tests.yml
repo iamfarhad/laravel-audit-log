@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     
     strategy:
-      fail-fast: false  # Changed to false to see all failures
+      fail-fast: false
       matrix:
         php: [8.2, 8.3, 8.4]
         laravel: [11.*, 12.*]
@@ -40,29 +40,22 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, exif, iconv
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl
           coverage: xdebug
-          ini-values: error_reporting=E_ALL
+          ini-values: memory_limit=256M
           tools: composer:v2
-
-      - name: Verify PHP and extensions
-        run: |
-          php -v
-          php -m
-          php --ini
 
       - name: Setup problem matchers
         run: |
           echo "::add-matcher::/opt/hostedtoolcache/php.json"
           echo "::add-matcher::/opt/hostedtoolcache/phpunit.json"
-        shell: /usr/bin/bash -e {0}
 
       - name: Get composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('**/composer.json') }}-${{ matrix.stability }}
@@ -87,41 +80,9 @@ jobs:
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
-      - name: List installed packages
-        run: composer show
-
-      - name: Check for PHPUnit
-        run: |
-          if [ -f vendor/bin/phpunit ]; then
-            echo "PHPUnit exists at vendor/bin/phpunit"
-            ls -la vendor/bin/phpunit
-          else
-            echo "PHPUnit not found!"
-            ls -la vendor/bin/
-          fi
-
-      - name: Check for tests directory
-        run: |
-          if [ -d tests ]; then
-            echo "Tests directory exists"
-            ls -la tests
-          else
-            echo "Tests directory not found!"
-          fi
-
       - name: Run PHPUnit tests
-        run: |
-          if [ -f vendor/bin/phpunit ]; then
-            vendor/bin/phpunit --coverage-text --verbose
-          else
-            echo "PHPUnit not found, skipping tests"
-            exit 1
-          fi
+        run: vendor/bin/phpunit --coverage-text --verbose
 
       - name: Run PHP Static Analysis
-        run: |
-          if [ -f vendor/bin/phpstan ]; then
-            vendor/bin/phpstan analyse
-          else
-            echo "PHPStan not found, skipping static analysis"
-          fi 
+        if: ${{ matrix.stability == 'prefer-stable' }}
+        run: vendor/bin/phpstan analyse 

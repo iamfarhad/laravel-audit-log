@@ -1,4 +1,4 @@
-name: Coding Standards
+name: PHPStan Static Analysis
 
 on:
   push:
@@ -12,8 +12,8 @@ env:
   COMPOSER_NO_AUDIT: 1
 
 jobs:
-  lint:
-    name: PHP CS Check
+  phpstan:
+    name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -26,11 +26,8 @@ jobs:
           php-version: 8.4
           extensions: dom, curl, libxml, mbstring, zip, pcntl, bcmath, intl
           coverage: none
+          ini-values: memory_limit=512M
           tools: composer:v2
-
-      - name: Setup problem matchers
-        run: |
-          echo "::add-matcher::/opt/hostedtoolcache/php.json"
 
       - name: Get composer cache directory
         id: composer-cache
@@ -47,5 +44,5 @@ jobs:
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress
 
-      - name: Check code style with Laravel Pint
-        run: vendor/bin/pint --test 
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse 

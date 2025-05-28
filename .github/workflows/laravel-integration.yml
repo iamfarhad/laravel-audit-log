@@ -1,0 +1,151 @@
+name: Laravel Integration Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays
+
+env:
+  COMPOSER_PROCESS_TIMEOUT: 0
+  COMPOSER_NO_INTERACTION: 1
+  COMPOSER_NO_AUDIT: 1
+
+jobs:
+  integration-test:
+    name: Laravel Integration - PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [8.3, 8.4]
+        laravel: [11.*, 12.*]
+        exclude:
+          - php: 8.3
+            laravel: 12.*
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Create Laravel app
+        run: |
+          composer create-project laravel/laravel:${{ matrix.laravel }} laravel-app --prefer-dist --no-interaction
+          cd laravel-app
+          composer require laravel/pint --dev
+
+      - name: Install package from path
+        run: |
+          cd laravel-app
+          composer config repositories.local path "../"
+          composer require iamfarhad/laravel-audit-log:@dev --no-interaction
+
+      - name: Publish config
+        run: |
+          cd laravel-app
+          php artisan vendor:publish --provider="iamfarhad\\LaravelAuditLog\\AuditLoggerServiceProvider"
+
+      - name: Create sample migration and model
+        run: |
+          cd laravel-app
+          php artisan make:model TestModel -m
+
+      - name: Add Auditable trait to model
+        run: |
+          cd laravel-app
+          cat > app/Models/TestModel.php << 'EOL'
+          <?php
+          
+          declare(strict_types=1);
+          
+          namespace App\Models;
+          
+          use Illuminate\Database\Eloquent\Factories\HasFactory;
+          use Illuminate\Database\Eloquent\Model;
+          use iamfarhad\LaravelAuditLog\Traits\Auditable;
+          
+          final class TestModel extends Model
+          {
+              use HasFactory;
+              use Auditable;
+              
+              protected $fillable = ['name'];
+          }
+          EOL
+
+      - name: Update migration
+        run: |
+          cd laravel-app
+          find database/migrations -name "*_create_test_models_table.php" -exec sed -i 's/Schema::create/\$table->string("name")->nullable();\n            Schema::create/g' {} \;
+
+      - name: Run migrations
+        run: |
+          cd laravel-app
+          php artisan migrate
+
+      - name: Create basic test
+        run: |
+          cd laravel-app
+          cat > tests/Feature/AuditLogTest.php << 'EOL'
+          <?php
+          
+          declare(strict_types=1);
+          
+          namespace Tests\Feature;
+          
+          use App\Models\TestModel;
+          use iamfarhad\LaravelAuditLog\Models\AuditLog;
+          use Tests\TestCase;
+          
+          final class AuditLogTest extends TestCase
+          {
+              public function test_it_can_create_audit_log_when_model_is_created(): void
+              {
+                  $model = TestModel::create(['name' => 'Test']);
+                  
+                  $this->assertDatabaseHas('audit_logs', [
+                      'auditable_type' => TestModel::class,
+                      'auditable_id' => $model->id,
+                      'event' => 'created',
+                  ]);
+              }
+              
+              public function test_it_can_create_audit_log_when_model_is_updated(): void
+              {
+                  $model = TestModel::create(['name' => 'Test']);
+                  $model->update(['name' => 'Updated']);
+                  
+                  $this->assertDatabaseHas('audit_logs', [
+                      'auditable_type' => TestModel::class,
+                      'auditable_id' => $model->id,
+                      'event' => 'updated',
+                  ]);
+                  
+                  $log = AuditLog::where('auditable_id', $model->id)
+                      ->where('event', 'updated')
+                      ->first();
+                      
+                  $this->assertNotNull($log);
+                  $this->assertIsArray($log->old_values);
+                  $this->assertIsArray($log->new_values);
+                  $this->assertEquals('Test', $log->old_values['name']);
+                  $this->assertEquals('Updated', $log->new_values['name']);
+              }
+          }
+          EOL
+
+      - name: Run tests
+        run: |
+          cd laravel-app
+          php artisan test 
