@@ -14,4 +14,9 @@ parameters:
         - 
             identifier: missingType.iterableValue
         -
-            identifier: missingType.generics 
+            identifier: missingType.generics
+        # MongoDB related errors (the MongoDB driver uses dynamic methods)
+        - '#Call to an undefined method Illuminate\\Database\\Connection::collection\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Connection::listCollections\(\)#'
+        - '#Property iamfarhad\\LaravelAuditLog\\Drivers\\MongoDBDriver::\$databaseName is never read, only written.#'
+        - '#Construct empty\(\) is not allowed. Use more strict comparison.#' 

@@ -39,10 +39,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, exif, iconv
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, exif, iconv, mongodb
           coverage: xdebug
           ini-values: error_reporting=E_ALL
           tools: composer:v2
+
+      - name: Verify MongoDB extension
+        run: php -r "echo 'MongoDB extension loaded: ' . (extension_loaded('mongodb') ? 'Yes' : 'No') . PHP_EOL;"
 
       - name: Setup problem matchers
         run: |
