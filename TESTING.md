@@ -32,7 +32,7 @@ If you prefer to run tests manually within the package directory:
 
 ```bash
 # Run PHPUnit tests
-composer test
+vendor/bin/phpunit
 
 # Run Laravel Pint code style check
 vendor/bin/pint --test
