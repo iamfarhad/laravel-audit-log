@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests;
 
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use iamfarhad\LaravelAuditLog\AuditLoggerServiceProvider;
 
@@ -12,6 +14,9 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Run the migrations
+        $this->setUpDatabase();
     }
 
     protected function getPackageProviders($app): array
@@ -23,9 +28,6 @@ abstract class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
-        // Get driver from environment - defaults to 'mysql'
-        $driver = env('DB_DRIVER', 'mysql');
-
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
@@ -34,34 +36,69 @@ abstract class TestCase extends Orchestra
             'prefix' => '',
         ]);
 
-        // Setup MongoDB connection for testing
-        $app['config']->set('database.connections.mongodb', [
-            'driver' => 'mongodb',
-            'host' => env('MONGODB_HOST', '127.0.0.1'),
-            'port' => env('MONGODB_PORT', 27017),
-            'database' => env('MONGODB_DATABASE', 'audit_test'),
-            'username' => env('MONGODB_USERNAME', ''),
-            'password' => env('MONGODB_PASSWORD', ''),
-        ]);
+        // Configure audit logger
+        $app['config']->set('audit-logger.default', 'mysql');
+        $app['config']->set('audit-logger.drivers.mysql.connection', 'testbench');
 
-        // Configure audit logger based on the selected driver
-        if ($driver === 'mongodb') {
-            $app['config']->set('audit-logger.default', 'mongodb');
-            $app['config']->set('audit-logger.drivers.mongodb.connection', 'mongodb');
-            $app['config']->set('audit-logger.drivers.mongodb.database', env('MONGODB_DATABASE', 'audit_test'));
-        } else {
-            $app['config']->set('audit-logger.default', 'mysql');
-            $app['config']->set('audit-logger.drivers.mysql.connection', 'testbench');
-        }
-
+        // Disable auto migration since we'll create the tables manually in setUpDatabase
+        $app['config']->set('audit-logger.auto_migration', false);
         $app['config']->set('audit-logger.batch.enabled', false);
-        $app['config']->set('audit-logger.auto_migration', true);
 
-        $this->setUpDatabase();
+        // Set global excluded fields
+        $app['config']->set('audit-logger.fields.exclude', [
+            'remember_token',
+            'updated_at',
+            'created_at',
+        ]);
     }
 
     protected function setUpDatabase(): void
     {
-        // Any additional database setup can go here
+        // Create users table
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('last_login_at')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        // Create posts table
+        Schema::create('posts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->text('content');
+            $table->string('status')->default('draft'); // draft, published, archived
+            $table->timestamp('published_at')->nullable();
+            $table->timestamps();
+        });
+
+        // Create model-specific audit tables
+        $auditTables = [
+            'audit_users_logs',
+            'audit_posts_logs'
+        ];
+
+        foreach ($auditTables as $tableName) {
+            Schema::create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->string('entity_id');
+                $table->string('action');
+                $table->json('old_values')->nullable();
+                $table->json('new_values')->nullable();
+                $table->string('causer_type')->nullable();
+                $table->string('causer_id')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamp('created_at');
+
+                $table->index('entity_id');
+                $table->index(['causer_type', 'causer_id']);
+                $table->index('created_at');
+            });
+        }
     }
 }
