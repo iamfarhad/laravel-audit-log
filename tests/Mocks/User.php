@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Tests\Mocks;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Contracts\Auth\Authenticatable;
 use iamfarhad\LaravelAuditLog\Traits\Auditable;
 
-final class User extends Model
+final class User extends Model implements Authenticatable
 {
     use Auditable;
 
@@ -39,5 +40,61 @@ final class User extends Model
             'ip_address' => request()->ip() ?? '127.0.0.1',
             'user_agent' => request()->userAgent() ?? 'Testing',
         ];
+    }
+
+    /**
+     * Get the name of the unique identifier for the user.
+     */
+    public function getAuthIdentifierName(): string
+    {
+        return 'id';
+    }
+
+    /**
+     * Get the unique identifier for the user.
+     */
+    public function getAuthIdentifier(): mixed
+    {
+        return $this->id;
+    }
+
+    /**
+     * Get the password for the user.
+     */
+    public function getAuthPassword(): string
+    {
+        return $this->password;
+    }
+
+    /**
+     * Get the column name for the "remember me" token.
+     */
+    public function getAuthPasswordName(): string
+    {
+        return 'password';
+    }
+
+    /**
+     * Get the token value for the "remember me" session.
+     */
+    public function getRememberToken(): ?string
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * Set the token value for the "remember me" session.
+     */
+    public function setRememberToken($value): void
+    {
+        $this->remember_token = $value;
+    }
+
+    /**
+     * Get the column name for the "remember me" token.
+     */
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
     }
 }

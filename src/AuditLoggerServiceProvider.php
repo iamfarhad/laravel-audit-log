@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog;
 
 use Illuminate\Support\ServiceProvider;
+use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
+use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use Illuminate\Support\Facades\Event as EventFacade;
 use iamfarhad\LaravelAuditLog\Services\CauserResolver;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Listeners\AuditModelChanges;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
@@ -24,6 +27,8 @@ final class AuditLoggerServiceProvider extends ServiceProvider
             'audit-logger'
         );
 
+        $this->app->bind(AuditLogInterface::class, AuditLog::class);
+
         // Register the causer resolver
         $this->app->singleton(
             CauserResolverInterface::class,
@@ -36,11 +41,14 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         );
 
         // Register the main audit logger service
-        $this->app->singleton('audit-logger', fn ($app) => new AuditLogger(
-            config: $app['config']['audit-logger']
-        ));
+        $this->app->singleton(AuditLogger::class, function ($app) {
+            $driver = match ($app['config']['audit-logger.default']) {
+                'mysql' => new MySQLDriver,
+                default => new MySQLDriver,
+            };
 
-        $this->app->alias('audit-logger', alias: AuditLogger::class);
+            return new AuditLogger($driver);
+        });
     }
 
     /**

@@ -1,6 +1,4 @@
-# Laravel Audit Log
-
-A comprehensive entity-level audit logging package for Laravel with model-specific tables for tracking changes in your application's data. Perfect for compliance, debugging, and maintaining data integrity in modern web applications.
+# Laravel Audit Logger
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
 [![Total Downloads](https://img.shields.io/packagist/dt/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
@@ -15,52 +13,72 @@ A comprehensive entity-level audit logging package for Laravel with model-specif
 [![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg?style=flat-square)](https://github.com/iamfarhad/laravel-audit-log)
 [![Scrutinizer Code Quality](https://img.shields.io/scrutinizer/g/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://scrutinizer-ci.com/g/iamfarhad/laravel-audit-log)
 
+## Overview
+
+**Laravel Audit Logger** is a powerful and flexible package designed to provide detailed audit logging for Laravel applications. It enables tracking of all changes to your Eloquent models, ensuring compliance with regulatory requirements, aiding in debugging, and maintaining data integrity. Built with modern PHP and Laravel practices, this package adheres to strict typing, PSR-12 coding standards, and leverages dependency injection for maximum testability and maintainability.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+  - [Basic Usage](#basic-usage)
+  - [Advanced Usage](#advanced-usage)
+- [Customizing Audit Logging](#customizing-audit-logging)
+- [Retrieving Audit Logs](#retrieving-audit-logs)
+- [Performance Optimization](#performance-optimization)
+- [Testing](#testing)
+- [Security Best Practices](#security-best-practices)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Features
 
-- ✅ **Multiple Entity Support**: Audit any number of entities with dedicated model-specific log tables
-- ✅ **Database Driver**: Built-in support for MySQL
-- ✅ **Model Log Handling**: Automatic tracking of model changes (create, update, delete, restore)
-- ✅ **Field Inclusion/Exclusion**: Fine-grained control over which fields to audit
-- ✅ **Causer Identification**: Automatic tracking of who made the changes
-- ✅ **Auto-Migration**: Automatic table creation for new entities
-- ✅ **SOLID Principles**: Clean, maintainable, and extensible architecture
-- ✅ **Batch Processing**: Support for batching audit logs for better performance
-- ✅ **Customizable Metadata**: Add additional context to your audit logs
+- **Entity-Specific Audit Tables**: Automatically creates dedicated tables for each audited model to optimize performance and querying.
+- **Comprehensive Change Tracking**: Logs all CRUD operations (create, update, delete, restore) with old and new values.
+- **Customizable Field Logging**: Control which fields to include or exclude from auditing.
+- **User Tracking**: Automatically identifies and logs the user (causer) responsible for changes.
+- **Event-Driven Architecture**: Utilizes Laravel Events for decoupled and extensible audit logging.
+- **Batch Processing**: Supports batch operations for high-performance logging in large-scale applications.
+- **Type Safety**: Built with PHP 8.1+ strict typing and modern features like `readonly` properties and enums.
+- **Extensible Drivers**: Supports multiple storage drivers (currently MySQL) with the ability to implement custom drivers.
+- **Automatic Migration**: Seamlessly creates audit tables for new models when enabled.
 
 ## Requirements
 
-- PHP >= 8.1
-- Laravel 10.x, 11.x or 12.x (PHP 8.1 only supported with Laravel 10.x)
-- MySQL 8.0+
+- **PHP**: 8.1 or higher
+- **Laravel**: 10.x, 11.x, or 12.x
+- **Database**: MySQL 8.0+ (for the default driver)
 
 ## Installation
 
-### Step 1: Install the Package
+Install the package via Composer:
 
 ```bash
 composer require iamfarhad/laravel-audit-log
 ```
 
-The package will automatically register its service provider.
-
-### Step 2: Publish the Configuration
+After installation, publish the configuration file to customize settings:
 
 ```bash
 php artisan vendor:publish --tag=audit-logger-config
 ```
 
-This will create a `config/audit-logger.php` configuration file.
+This will create a configuration file at `config/audit-logger.php` where you can adjust settings like the storage driver, table naming conventions, and more.
 
 ## Configuration
 
-The configuration file (`config/audit-logger.php`) allows you to customize various aspects of the package:
+The configuration file `config/audit-logger.php` allows you to customize the behavior of the audit logger. Below are the key configuration options:
 
 ```php
 return [
-    // Default driver: 'mysql'
+    // Default audit driver
     'default' => env('AUDIT_DRIVER', 'mysql'),
 
-    // Driver configurations
+    // Driver-specific configurations
     'drivers' => [
         'mysql' => [
             'connection' => env('AUDIT_MYSQL_CONNECTION', config('database.default')),
@@ -69,355 +87,303 @@ return [
         ],
     ],
 
-    // Auto-migration for new entities
+    // Enable automatic migration for audit tables
     'auto_migration' => env('AUDIT_AUTO_MIGRATION', true),
 
-    // Global field configuration
+    // Global field exclusions
     'fields' => [
-        'exclude' => ['password', 'remember_token', 'api_token'],
-        'include_timestamps' => true,
+        'exclude' => [
+            'password',
+            'remember_token',
+            'api_token',
+        ],
+        'include_timestamps' => false,
     ],
 
-    // Causer configuration
+    // Batch processing settings for performance
+    'batch' => [
+        'enabled' => env('AUDIT_BATCH_ENABLED', false),
+        'size' => env('AUDIT_BATCH_SIZE', 100),
+    ],
+
+    // Causer (user) identification settings
     'causer' => [
-        'guard' => null, // null means use default guard
-        'model' => null, // null means auto-detect
-        'resolver' => null, // custom resolver class
+        'guard' => null, // Use default auth guard if null
+        'resolver' => null, // Custom causer resolver class
     ],
 ];
 ```
 
-### Helper Methods for Retrieving Logs
+Ensure you review and adjust these settings based on your application's needs, especially for sensitive data exclusion and performance optimization.
 
-You can add helper methods to your models to make retrieving audit logs easier:
+## Usage
 
-```php
-/**
- * Get the audit logs for this model.
- */
-public function auditLogs(array $options = [])
-{
-    return AuditLogger::getLogsForEntity(
-        entityType: static::class,
-        entityId: $this->getKey(),
-        options: $options
-    );
-}
+### Basic Usage
 
-/**
- * Get the most recent audit logs for this model.
- */
-public function recentAuditLogs(int $limit = 10)
-{
-    return AuditLogger::getLogsForEntity(
-        entityType: static::class,
-        entityId: $this->getKey(),
-        options: [
-            'limit' => $limit,
-            'from_date' => now()->subDays(30)->toDateString(),
-        ]
-    );
-}
-
-/**
- * Get audit logs for a specific action.
- */
-public function getActionLogs(string $action)
-{
-    return AuditLogger::getLogsForEntity(
-        entityType: static::class,
-        entityId: $this->getKey(),
-        options: ['action' => $action]
-    );
-}
-```
-
-## Basic Usage
-
-### Making Models Auditable
-
-To make a model auditable, simply use the `Auditable` trait:
-
-```php
-<?php
-
-namespace App\Models;
-
-use iamfarhad\LaravelAuditLog\Traits\Auditable;
-use Illuminate\Database\Eloquent\Model;
-
-class Product extends Model
-{
-    use Auditable;
-
-    // Simply define properties to configure auditing
-    
-    /**
-     * Fields to exclude from audit logging.
-     *
-     * @var array<string>
-     */
-    protected array $auditExclude = [
-        'password',
-        'remember_token',
-        'updated_at',
-    ];
-    
-    /**
-     * Fields to include in audit logging.
-     * Default ['*'] means include all fields except excluded ones.
-     * If you specify fields here, only these fields will be audited.
-     *
-     * @var array<string>
-     */
-    protected array $auditInclude = ['*'];
-
-    /**
-     * Get custom metadata for audit logs.
-     * Optional - Override this method to add custom metadata.
-     */
-    public function getAuditMetadata(): array
-    {
-        return [
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ];
-    }
-}
-```
-
-### Automatic Logging
-
-Once configured, the model will automatically log:
-- **Created** events when a new model is created
-- **Updated** events when a model is updated
-- **Deleted** events when a model is deleted (including soft deletes)
-- **Restored** events when a soft-deleted model is restored
-
-### Manual Logging
-
-For custom actions or to log events not triggered by model events, use the `AuditLogger` facade:
-
-```php
-use iamfarhad\LaravelAuditLog\Facades\AuditLogger;
-
-// Log a custom action
-AuditLogger::log(
-    entityType: Product::class,
-    entityId: $product->id,
-    action: 'published',
-    oldValues: ['status' => 'draft'],
-    newValues: ['status' => 'published', 'published_at' => now()->toIso8601String()],
-    metadata: [
-        'publisher_id' => auth()->id(),
-        'publication_channel' => 'web',
-    ]
-);
-```
-
-### Retrieving Audit Logs
-
-```php
-use iamfarhad\LaravelAuditLog\Facades\AuditLogger;
-
-// Get all logs for an entity
-$logs = AuditLogger::getLogsForEntity(
-    entityType: Product::class,
-    entityId: $product->id
-);
-
-// With filtering options
-$logs = AuditLogger::getLogsForEntity(
-    entityType: Product::class,
-    entityId: $product->id,
-    options: [
-        'limit' => 10,
-        'offset' => 0,
-        'action' => 'updated',
-        'from_date' => '2024-01-01',
-        'to_date' => '2024-12-31',
-    ]
-);
-```
-
-### Disabling Auditing
-
-You can temporarily disable auditing for specific operations:
-
-```php
-// Disable for a single model instance
-$product = Product::find(1);
-$product->disableAuditing();
-
-// Make changes without audit logs
-$product->internal_notes = 'System update';
-$product->save();
-
-// Re-enable auditing
-$product->enableAuditing();
-```
-
-## Advanced Features
-
-### Field Filtering
-
-Control which fields are audited using properties:
-
-```php
-// Exclude specific fields
-protected array $auditExclude = [
-    'password', 
-    'remember_token', 
-    'secret_key'
-];
-
-// Or explicitly include only certain fields
-protected array $auditInclude = [
-    'name', 
-    'email', 
-    'role', 
-    'status'
-];
-```
-
-The field filtering works as follows:
-1. If `$auditInclude` is `['*']` (default), all fields except those in `$auditExclude` will be audited
-2. If `$auditInclude` has specific fields, only those fields (minus any in `$auditExclude`) will be audited
-3. Global exclusions from `config('audit-logger.fields.exclude')` are always applied
-
-### Custom Metadata
-
-Add context to your audit logs by implementing `getAuditMetadata()`:
-
-```php
-public function getAuditMetadata(): array
-{
-    return [
-        'ip_address' => request()->ip(),
-        'user_agent' => request()->userAgent(),
-        'request_id' => request()->header('X-Request-ID'),
-        'session_id' => session()->getId(),
-    ];
-}
-```
-
-### Custom Causer Resolver
-
-Create a custom causer resolver if you need special logic for determining who made a change:
+To make a model auditable, simply add the `Auditable` trait to your Eloquent model. Ensure strict typing is enabled as per the engineering rules.
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace App\Models;
 
-use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Traits\Auditable;
 
-class CustomCauserResolver implements CauserResolverInterface
+final class Order extends Model
 {
-    public function resolve(): array
+    use Auditable;
+
+    protected $fillable = ['customer_id', 'total', 'status'];
+}
+```
+
+Once the trait is added, any changes to the model (create, update, delete, restore) will be automatically logged to a dedicated audit table (e.g., `audit_order_logs`).
+
+#### Excluding Fields
+
+To exclude specific fields from being audited, define the `$auditExclude` property:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Traits\Auditable;
+
+final class User extends Model
+{
+    use Auditable;
+
+    protected array $auditExclude = [
+        'password',
+        'remember_token',
+    ];
+}
+```
+
+#### Including Specific Fields
+
+Alternatively, you can specify only the fields to audit using `$auditInclude`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Traits\Auditable;
+
+final class Invoice extends Model
+{
+    use Auditable;
+
+    protected array $auditInclude = [
+        'amount',
+        'status',
+        'due_date',
+    ];
+}
+```
+
+### Advanced Usage
+
+#### Custom Metadata
+
+You can enrich audit logs with custom metadata by implementing the `getAuditMetadata` method in your model:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Traits\Auditable;
+
+final class Transaction extends Model
+{
+    use Auditable;
+
+    public function getAuditMetadata(): array
     {
-        // Your custom logic here
         return [
-            'type' => User::class,
-            'id' => auth()->id() ?? 'system',
+            'ip_address' => request()->ip() ?? 'unknown',
+            'user_agent' => request()->userAgent() ?? 'unknown',
+            'request_id' => request()->header('X-Request-Id', 'n/a'),
         ];
     }
 }
 ```
 
-Register it in the config:
+#### Temporarily Disabling Auditing
+
+For specific operations where auditing is not required, you can disable it temporarily:
 
 ```php
-// In config/audit-logger.php
-'causer' => [
-    'resolver' => \App\Services\CustomCauserResolver::class,
-],
+$user = User::find(1);
+$user->disableAuditing();
+$user->update(['email' => 'new.email@example.com']); // This change won't be logged
+$user->enableAuditing();
 ```
 
-## Database Schema
+#### Custom Audit Events
 
-### MySQL
+To log custom actions beyond standard CRUD operations, dispatch the `ModelAudited` event manually:
 
-For each audited entity, a table is created with the following structure:
+```php
+<?php
 
-```sql
-CREATE TABLE audit_products_logs (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    entity_id VARCHAR(255) NOT NULL,
-    action VARCHAR(50) NOT NULL,
-    old_values JSON NULL,
-    new_values JSON NULL,
-    causer_type VARCHAR(255) NULL,
-    causer_id VARCHAR(255) NULL,
-    metadata JSON NULL,
-    created_at TIMESTAMP NOT NULL,
-    INDEX idx_entity_id (entity_id),
-    INDEX idx_causer_id (causer_id),
-    INDEX idx_created_at (created_at)
-);
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Event;
+use iamfarhad\LaravelAuditLog\Events\ModelAudited;
+
+$order = Order::find(1);
+Event::dispatch(new ModelAudited(
+    model: $order,
+    action: 'status_changed',
+    oldValues: ['status' => 'pending'],
+    newValues: ['status' => 'shipped']
+));
 ```
 
-## Troubleshooting
+## Customizing Audit Logging
 
-### Common Issues
+If you need to extend the audit logging functionality, you can implement a custom driver by adhering to the `AuditDriverInterface`. Register your custom driver in a service provider:
 
-1. **Tables not created**: The auto-migration only triggers when writing audit logs, not when reading. You have several options:
-   
-   a. **Manual creation**:
-   ```php
-   AuditLogger::createStorageForEntity(Product::class);
-   ```
-   
-   b. **Trigger an audit event** to auto-create the table:
-   ```php
-   $product = Product::first();
-   $product->update(['name' => $product->name]);
-   ```
+```php
+<?php
 
-2. **Logs not appearing**: Check if:
-   - Model uses `Auditable` trait
-   - Auditing is enabled on the model instance
+declare(strict_types=1);
 
-## Development
+namespace App\Providers;
 
-### Testing
+use Illuminate\Support\ServiceProvider;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use App\Audit\CustomAuditDriver;
 
-Run the tests with:
+final class AuditServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->app->bind(AuditDriverInterface::class, CustomAuditDriver::class);
+    }
+}
+```
+
+## Retrieving Audit Logs
+
+Audit logs are accessible via a relationship on the audited model. Use the `auditLogs()` method to query logs:
+
+```php
+$user = User::find(1);
+
+// Retrieve all audit logs
+$allLogs = $user->auditLogs()->get();
+
+// Filter by specific action
+$updateLogs = $user->auditLogs()->where('action', 'updated')->get();
+
+// Get the most recent logs
+$recentLogs = $user->auditLogs()->orderBy('created_at', 'desc')->take(5)->get();
+```
+
+For advanced querying, you can directly use the `EloquentAuditLog` model with various scopes to filter audit logs based on specific criteria:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+
+// Get logs for a specific entity type and ID
+$logs = EloquentAuditLog::forEntity(User::class)
+    ->where('entity_id', 1)
+    ->where('action', 'updated')
+    ->where('created_at', '>=', now()->subDays(7))
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+// Use scope to filter by action type
+$createdLogs = EloquentAuditLog::forEntity(User::class)
+    ->action('created')
+    ->where('entity_id', 1)
+    ->get();
+
+// Use scope to filter by date range
+$lastMonthLogs = EloquentAuditLog::forEntity(User::class)
+    ->dateBetween(now()->subDays(30), now())
+    ->where('entity_id', 1)
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+// Use scope to filter by causer (user who performed the action)
+$adminLogs = EloquentAuditLog::forEntity(User::class)
+    ->causer(1) // Assuming causer_id 1 is the admin
+    ->where('entity_id', 1)
+    ->get();
+
+// Combine multiple scopes for precise filtering
+$filteredLogs = EloquentAuditLog::forEntity(User::class)
+    ->action('updated')
+    ->causer(1)
+    ->dateBetween(now()->subDays(7), now())
+    ->where('entity_id', 1)
+    ->orderBy('created_at', 'desc')
+    ->take(10)
+    ->get();
+```
+
+These scopes allow for flexible and efficient querying of audit logs, making it easier to analyze changes based on action type, date range, or the user responsible for the change.
+
+## Performance Optimization
+
+- **Batch Processing**: Enable batch processing in the configuration to reduce database transactions for high-frequency operations.
+  ```php
+  'batch' => [
+      'enabled' => true,
+      'size' => 100,
+  ],
+  ```
+- **Selective Auditing**: Limit audited fields to only those necessary for compliance or debugging to minimize storage and processing overhead.
+- **Database Indexing**: Ensure audit tables have appropriate indexes for frequent queries (handled automatically by the package).
+
+## Testing
+
+This package includes a robust test suite. To run the tests locally:
 
 ```bash
 composer test
 ```
 
-### Code Style
+When writing tests for your application, ensure you cover audit logging behavior, especially for critical models. Mock the audit driver if necessary to isolate tests from actual logging.
 
-This package follows the Laravel coding style. You can check and fix the code style with:
+## Security Best Practices
 
-```bash
-# Check code style
-composer pint:test
+- **Exclude Sensitive Data**: Always exclude fields containing personally identifiable information (PII) or sensitive data using `$auditExclude`.
+- **Access Control**: Implement authorization checks (using Laravel Gates or Policies) to restrict access to audit logs.
+- **Data Retention**: Consider implementing a retention policy to purge old audit logs, balancing compliance needs with data privacy.
 
-# Fix code style issues
-composer pint
-```
+## Troubleshooting
 
-### Static Analysis
+- **Audit Tables Not Created**: Ensure `'auto_migration' => true` in your configuration. If disabled, manually create tables using `AuditLogger::driver()->createStorageForEntity(Model::class)`.
+- **Missing Logs**: Verify that fields aren't excluded globally or in the model, and ensure auditing isn't disabled for the operation.
+- **Causer Not Recorded**: Confirm that authentication is set up correctly and the user is logged in during the operation.
 
-Run static analysis with PHPStan:
+## Contributing
 
-```bash
-composer analyse
-```
-
-### Continuous Integration
-
-This package uses GitHub Actions for continuous integration. The following checks are run on each push and pull request:
-
-- **Tests**: PHPUnit tests against multiple PHP and Laravel versions
-- **Coding Standards**: Laravel Pint for code style
-- **Static Analysis**: PHPStan for static analysis
+Contributions are welcome! Please follow the guidelines in [CONTRIBUTING.md](CONTRIBUTING.md) for submitting pull requests, reporting issues, or suggesting features.
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+This package is open-sourced software licensed under the [MIT license](LICENSE.md).

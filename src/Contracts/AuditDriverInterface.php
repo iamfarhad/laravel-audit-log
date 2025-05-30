@@ -12,13 +12,6 @@ interface AuditDriverInterface
     public function store(AuditLogInterface $log): void;
 
     /**
-     * Retrieve audit logs for a specific entity.
-     *
-     * @return array<AuditLogInterface>
-     */
-    public function getLogsForEntity(string $entityType, string|int $entityId, array $options = []): array;
-
-    /**
      * Create storage for a new entity type if needed.
      */
     public function createStorageForEntity(string $entityClass): void;

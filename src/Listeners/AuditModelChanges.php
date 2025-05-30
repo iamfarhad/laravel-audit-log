@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Listeners;
 
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
+use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
 final class AuditModelChanges
 {
@@ -19,11 +21,6 @@ final class AuditModelChanges
      */
     public function handle(ModelAudited $event): void
     {
-        Log::debug('AuditModelChanges listener triggered', [
-            'model' => get_class($event->model),
-            'action' => $event->action,
-        ]);
-
         try {
             $model = $event->model;
 
@@ -33,8 +30,6 @@ final class AuditModelChanges
                 ! method_exists($model, 'getAuditEntityType') ||
                 ! method_exists($model, 'getAuditMetadata')
             ) {
-                Log::warning('Model missing required audit methods', ['model' => get_class($model)]);
-
                 return;
             }
 
@@ -44,35 +39,23 @@ final class AuditModelChanges
 
             // Skip if no changes after filtering
             if ($event->action === 'updated' && ($newValues === null || count($newValues) === 0)) {
-                Log::debug('No changes after filtering, skipping audit log');
-
                 return;
             }
 
-            // Log the audit
-            Log::debug('Calling AuditLogger to log audit event', [
-                'entity_type' => $model->getAuditEntityType(),
-                'entity_id' => $model->getKey(),
-            ]);
             $this->auditLogger->log(
-                entityType: $model->getAuditEntityType(),
-                entityId: $model->getKey(),
-                action: $event->action,
-                oldValues: $oldValues,
-                newValues: $newValues,
-                metadata: $model->getAuditMetadata()
+                new AuditLog(
+                    entityType: $model->getAuditEntityType(),
+                    entityId: $model->getKey(),
+                    action: $event->action,
+                    oldValues: $oldValues,
+                    newValues: $newValues,
+                    metadata: $model->getAuditMetadata(),
+                    causerType: app(CauserResolverInterface::class)->resolve()['type'],
+                    causerId: app(CauserResolverInterface::class)->resolve()['id'],
+                    createdAt: Carbon::now(),
+                )
             );
-
-            Log::debug('Audit log stored', [
-                'entity' => $model->getAuditEntityType(),
-                'id' => $model->getKey(),
-            ]);
         } catch (\Throwable $e) {
-            Log::error('Audit log failed', [
-                'error' => $e->getMessage(),
-                'model' => $model->getKey() ?? 'unknown',
-                'trace' => $e->getTraceAsString(),
-            ]);
             throw $e;
         }
     }

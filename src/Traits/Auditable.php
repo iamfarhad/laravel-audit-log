@@ -7,7 +7,7 @@ namespace iamfarhad\LaravelAuditLog\Traits;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use iamfarhad\LaravelAuditLog\Events\ModelAudited;
-use iamfarhad\LaravelAuditLog\Contracts\AuditableInterface;
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
 
 /**
  * Trait that implements the AuditableInterface to make models auditable.
@@ -150,5 +150,10 @@ trait Auditable
     public function getKey(): string|int
     {
         return $this->getAttribute($this->getKeyName());
+    }
+
+    public function auditLogs()
+    {
+        return $this->morphMany(EloquentAuditLog::forEntity(static::class), 'auditable');
     }
 }

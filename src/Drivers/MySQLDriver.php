@@ -5,47 +5,38 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
 use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Connection;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use iamfarhad\LaravelAuditLog\Models\AuditLog;
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class MySQLDriver implements AuditDriverInterface
 {
-    private Connection $connection;
-
     private string $tablePrefix;
 
     private string $tableSuffix;
 
-    public function __construct(array $config = [])
+    private array $config;
+
+    public function __construct()
     {
-        $connectionName = $config['connection'] ?? config('database.default');
-        $this->connection = app('db')->connection($connectionName);
-        $this->tablePrefix = $config['table_prefix'] ?? 'audit_';
-        $this->tableSuffix = $config['table_suffix'] ?? '_logs';
+        $this->config = config('audit-logger');
+        $this->tablePrefix = $this->config['drivers']['mysql']['table_prefix'] ?? 'audit_';
+        $this->tableSuffix = $this->config['drivers']['mysql']['table_suffix'] ?? '_logs';
     }
 
     public function store(AuditLogInterface $log): void
     {
-        Log::info('Entering store method for audit log', [
-            'entity_type' => $log->getEntityType(),
-            'entity_id' => $log->getEntityId(),
-            'action' => $log->getAction(),
-        ]);
-
         $tableName = $this->getTableName($log->getEntityType());
+
+        $this->ensureStorageExists($log->getEntityType());
 
         try {
             $oldValues = $log->getOldValues();
             $newValues = $log->getNewValues();
 
-            $this->connection->table($tableName)->insert([
+            EloquentAuditLog::forEntity(entityClass: $log->getEntityType())->create([
                 'entity_id' => $log->getEntityId(),
                 'action' => $log->getAction(),
                 'old_values' => $oldValues !== null ? json_encode($oldValues) : null,
@@ -55,18 +46,7 @@ final class MySQLDriver implements AuditDriverInterface
                 'metadata' => json_encode($log->getMetadata()),
                 'created_at' => $log->getCreatedAt(),
             ]);
-            Log::debug('Audit log inserted into database', [
-                'table' => $tableName,
-                'entity_id' => $log->getEntityId(),
-                'action' => $log->getAction(),
-            ]);
         } catch (\Exception $e) {
-            Log::error('Failed to store audit log in database', [
-                'table' => $tableName,
-                'entity_id' => $log->getEntityId(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
             throw $e;
         }
     }
@@ -80,45 +60,12 @@ final class MySQLDriver implements AuditDriverInterface
     public function storeBatch(array $logs): void
     {
         foreach ($logs as $log) {
+            if (! $log instanceof AuditLogInterface) {
+                throw new \InvalidArgumentException('Log must be an instance of AuditLogInterface');
+            }
+
             $this->store($log);
         }
-    }
-
-    public function getLogsForEntity(string $entityType, string|int $entityId, array $options = []): array
-    {
-        $tableName = $this->getTableName($entityType);
-
-        if (! Schema::hasTable($tableName)) {
-            return [];
-        }
-
-        $query = $this->connection->table($tableName)
-            ->where('entity_id', $entityId);
-
-        $this->applyFilters($query, $options);
-
-        $records = $query->get();
-        $logs = [];
-
-        foreach ($records as $record) {
-            $oldValues = $record->old_values !== null ? json_decode($record->old_values, true) : null;
-            $newValues = $record->new_values !== null ? json_decode($record->new_values, true) : null;
-            $metadata = $record->metadata !== null ? json_decode($record->metadata, true) : [];
-
-            $logs[] = new AuditLog(
-                entityType: $entityType,
-                entityId: $record->entity_id,
-                action: $record->action,
-                oldValues: $oldValues,
-                newValues: $newValues,
-                causerType: $record->causer_type,
-                causerId: $record->causer_id,
-                metadata: $metadata,
-                createdAt: new Carbon($record->created_at)
-            );
-        }
-
-        return $logs;
     }
 
     public function createStorageForEntity(string $entityClass): void
@@ -131,7 +78,7 @@ final class MySQLDriver implements AuditDriverInterface
 
         Schema::create($tableName, function (Blueprint $table) {
             $table->id();
-            $table->string('entity_id');
+            $table->bigInteger('entity_id')->unsigned();
             $table->string('action');
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
@@ -156,12 +103,13 @@ final class MySQLDriver implements AuditDriverInterface
      */
     public function ensureStorageExists(string $entityClass): void
     {
-        $autoMigration = config('audit-logger.auto_migration');
+        $autoMigration = $this->config['auto_migration'] ?? true;
         if ($autoMigration === false) {
             return;
         }
 
         if (! $this->storageExistsForEntity($entityClass)) {
+
             $this->createStorageForEntity($entityClass);
         }
     }
@@ -174,32 +122,6 @@ final class MySQLDriver implements AuditDriverInterface
         // Handle pluralization
         $tableName = Str::plural($className);
 
-        return $this->tablePrefix.$tableName.$this->tableSuffix;
-    }
-
-    private function applyFilters(Builder $query, array $options): void
-    {
-        if (isset($options['limit'])) {
-            $query->limit((int) $options['limit']);
-        }
-
-        if (isset($options['offset'])) {
-            $query->offset((int) $options['offset']);
-        }
-
-        if (isset($options['action'])) {
-            $query->where('action', $options['action']);
-        }
-
-        if (isset($options['from_date'])) {
-            $query->where('created_at', '>=', new Carbon($options['from_date']));
-        }
-
-        if (isset($options['to_date'])) {
-            $query->where('created_at', '<=', new Carbon($options['to_date']));
-        }
-
-        // Sort by created_at in descending order by default
-        $query->orderBy('created_at', $options['sort'] ?? 'desc');
+        return "{$this->tablePrefix}{$tableName}{$this->tableSuffix}";
     }
 }

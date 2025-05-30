@@ -4,117 +4,36 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
-use InvalidArgumentException;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
-use iamfarhad\LaravelAuditLog\Models\AuditLog;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class AuditLogger
 {
-    private array $drivers = [];
+    public function __construct(private AuditDriverInterface $driver) {}
 
-    private ?string $defaultDriver = null;
-
-    public function __construct(
-        private readonly array $config = [],
-    ) {
-        $this->defaultDriver = $config['default'] ?? 'mysql';
+    public function log(AuditLogInterface $log): void
+    {
+        $this->driver->store($log);
     }
 
     /**
-     * Log an audit event.
-     */
-    public function log(
-        string $entityType,
-        string|int $entityId,
-        string $action,
-        ?array $oldValues = null,
-        ?array $newValues = null,
-        array $metadata = []
-    ): void {
-        // Ensure storage exists before logging
-        $this->ensureStorageExists($entityType);
-
-        // Create a log object using the existing AuditLog class
-        $log = new AuditLog(
-            entityType: $entityType,
-            entityId: $entityId,
-            action: $action,
-            oldValues: $oldValues,
-            newValues: $newValues,
-            causerType: null,
-            causerId: null,
-            metadata: $metadata,
-            createdAt: Carbon::now()
-        );
-
-        $this->driver()->store($log);
-    }
-
-    /**
-     * Get logs for a specific entity.
+     * @param  array<AuditLogInterface>  $logs
      *
-     * @return array<AuditLogInterface>
+     * @throws \Exception
      */
-    public function getLogsForEntity(
-        string $entityType,
-        string|int $entityId,
-        array $options = []
-    ): array {
-        return $this->driver()->getLogsForEntity($entityType, $entityId, $options);
+    public function batch(array $logs): void
+    {
+        $this->driver->storeBatch($logs);
     }
 
-    /**
-     * Create storage for a new entity type.
-     */
-    public function createStorageForEntity(string $entityClass): void
+    public static function getDriver(string $driverName): static
     {
-        $this->driver()->createStorageForEntity($entityClass);
-    }
-
-    /**
-     * Check if storage exists for an entity type.
-     */
-    public function storageExistsForEntity(string $entityClass): bool
-    {
-        return $this->driver()->storageExistsForEntity($entityClass);
-    }
-
-    /**
-     * Ensures the audit storage exists for the entity if auto_migration is enabled.
-     */
-    public function ensureStorageExists(string $entityClass): void
-    {
-        $this->driver()->ensureStorageExists($entityClass);
-    }
-
-    /**
-     * Get the audit driver instance.
-     */
-    public function driver(?string $name = null): AuditDriverInterface
-    {
-        $name = $name ?? $this->defaultDriver;
-
-        if (! isset($this->drivers[$name])) {
-            $this->drivers[$name] = $this->createDriver($name);
-        }
-
-        return $this->drivers[$name];
-    }
-
-    /**
-     * Create a new driver instance.
-     */
-    private function createDriver(string $name): AuditDriverInterface
-    {
-        $config = $this->config['drivers'][$name] ?? [];
-
-        return match ($name) {
-            'mysql' => app(MySQLDriver::class, ['config' => $config]),
-            default => throw new InvalidArgumentException("Unsupported audit driver: {$name}")
+        $driver = match ($driverName) {
+            'mysql' => new MySQLDriver,
+            default => throw new \InvalidArgumentException("Driver {$driverName} not found"),
         };
+
+        return new self($driver);
     }
 }

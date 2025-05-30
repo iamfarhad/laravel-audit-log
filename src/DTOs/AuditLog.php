@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace iamfarhad\LaravelAuditLog\Models;
+namespace iamfarhad\LaravelAuditLog\DTOs;
 
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
