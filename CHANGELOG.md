@@ -8,6 +8,7 @@ All notable changes to `iamfarhad/laravel-audit-log` will be documented in this 
 - Comprehensive update to `README.md` with detailed documentation on features, installation, configuration, and usage.
 - Added examples for using scopes in audit log retrieval, including `action()`, `dateBetween()`, and `causer()`.
 - Enhanced usage section with basic and advanced examples for audit logging.
+- Added Fluent API for custom audit events via the `audit()` method, allowing for more intuitive and readable code.
 
 ### Changed
 - Updated documentation structure for better readability and adherence to best practices.

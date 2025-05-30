@@ -256,6 +256,28 @@ Event::dispatch(new ModelAudited(
 ));
 ```
 
+#### Fluent API for Custom Audit Events
+
+For a more intuitive and readable way to log custom actions, use the fluent API provided by the `audit()` method:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use App\Models\Order;
+
+$order = Order::find(1);
+$order->audit()
+    ->custom('status_transition')
+    ->from(['status' => 'pending'])
+    ->to(['status' => 'shipped'])
+    ->withMetadata(['ip' => request()->ip(), 'user_agent' => request()->userAgent()])
+    ->log();
+```
+
+This fluent interface allows you to chain methods to define the custom action, old and new values, and additional metadata before logging the event. It respects the model's auditable attributes and merges any default metadata defined in `getAuditMetadata()` with custom metadata provided.
+
 ## Customizing Audit Logging
 
 If you need to extend the audit logging functionality, you can implement a custom driver by adhering to the `AuditDriverInterface`. Register your custom driver in a service provider:

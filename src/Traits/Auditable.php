@@ -7,6 +7,7 @@ namespace iamfarhad\LaravelAuditLog\Traits;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use iamfarhad\LaravelAuditLog\Events\ModelAudited;
+use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
 
 /**
@@ -155,5 +156,13 @@ trait Auditable
     public function auditLogs()
     {
         return $this->morphMany(EloquentAuditLog::forEntity(static::class), 'auditable');
+    }
+
+    /**
+     * Initiate a fluent builder for custom audit logging.
+     */
+    public function audit(): AuditBuilder
+    {
+        return new AuditBuilder($this);
     }
 }
