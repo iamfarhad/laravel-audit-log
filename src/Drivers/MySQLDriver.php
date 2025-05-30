@@ -78,7 +78,7 @@ final class MySQLDriver implements AuditDriverInterface
 
         Schema::create($tableName, function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('entity_id')->unsigned();
+            $table->string('entity_id');
             $table->string('action');
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
