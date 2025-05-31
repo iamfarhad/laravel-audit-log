@@ -1,25 +1,16 @@
 build:
   environment:
-    php: 8.1
-    node: false
-    postgresql: false
-    redis: false
-    mysql: false
-    mongodb: false
-    elasticsearch: false
-    rabbitmq: false
-    selenium: false
-    docker: true
+    php:
+      version: 8.1
+    docker: false
 
   nodes:
     analysis:
-      image: default-jammy
       tests:
         override:
           - php-scrutinizer-run
 
     coverage:
-      image: default-jammy
       tests:
         override:
           - command: vendor/bin/phpunit --coverage-clover=coverage.clover
