@@ -22,6 +22,8 @@ filter:
 
 checks:
   php:
+    code_rating: true
+    duplication: true
     remove_extra_empty_lines: true
     remove_php_closing_tag: true
     remove_trailing_whitespace: true
@@ -35,8 +37,6 @@ checks:
     fix_line_ending: true
     fix_identation_4spaces: true
     fix_doc_comments: true
-    code_rating: true
-    duplication: true
     variable_existence: true
     useless_calls: true
     use_statement_alias_conflict: true
@@ -68,11 +68,7 @@ checks:
     non_commented_empty_catch_block: true
     no_trait_type_hints: true
     no_trailing_whitespace: true
-    no_short_variable_names:
-      minimum: '3'
     no_short_open_tag: true
-    no_short_method_names:
-      minimum: '3'
     no_property_on_interface: true
     no_non_implemented_abstract_methods: true
     no_goto: true
@@ -84,18 +80,6 @@ checks:
     no_debug_code: true
     no_commented_out_code: true
     newline_at_end_of_file: true
-    naming_conventions:
-      local_variable: '^[a-z][a-zA-Z0-9]*$'
-      abstract_class_name: '^Abstract[A-Z][a-zA-Z0-9]*$'
-      utility_class_name: '^[A-Z][a-zA-Z0-9]*$'
-      constant_name: '^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$'
-      property_name: '^[a-z][a-zA-Z0-9]*$'
-      method_name: '^[a-z][a-zA-Z0-9]*$'
-      parameter_name: '^[a-z][a-zA-Z0-9]*$'
-      interface_name: '^[A-Z][a-zA-Z0-9]*Interface$'
-      type_name: '^[A-Z][a-zA-Z0-9]*$'
-      exception_name: '^[A-Z][a-zA-Z0-9]*Exception$'
-      isser_method_name: '^is[A-Z][a-zA-Z0-9]*$'
     more_specific_types_in_doc_comments: true
     missing_arguments: true
     method_calls_on_non_object: true
@@ -106,7 +90,6 @@ checks:
     deprecated_code_usage: true
     deadlock_detection_in_loops: true
     comparison_always_same_result: true
-    code_rating: true
     closure_use_modifiable: true
     catch_class_exists: true
     call_to_parent_method: true
@@ -123,6 +106,26 @@ checks:
     verify_access_scope_valid: true
     uppercase_constants: true
     use_self_instead_of_fqcn: true
+    
+    # Naming conventions
+    naming_conventions:
+      local_variable: '^[a-z][a-zA-Z0-9]*$'
+      abstract_class_name: '^Abstract[A-Z][a-zA-Z0-9]*$'
+      utility_class_name: '^[A-Z][a-zA-Z0-9]*$'
+      constant_name: '^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$'
+      property_name: '^[a-z][a-zA-Z0-9]*$'
+      method_name: '^[a-z][a-zA-Z0-9]*$'
+      parameter_name: '^[a-z][a-zA-Z0-9]*$'
+      interface_name: '^[A-Z][a-zA-Z0-9]*Interface$'
+      type_name: '^[A-Z][a-zA-Z0-9]*$'
+      exception_name: '^[A-Z][a-zA-Z0-9]*Exception$'
+      isser_method_name: '^is[A-Z][a-zA-Z0-9]*$'
+      
+    # Variable length constraints
+    no_short_method_names:
+      minimum: '3'
+    no_short_variable_names:
+      minimum: '3'
 
 tools:
   external_code_coverage:
