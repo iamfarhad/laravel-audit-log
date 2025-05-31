@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  scrutinizer:
-    name: Scrutinizer
+  test-and-analyze:
+    name: Test & Analyze
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,7 +22,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.1
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
           coverage: xdebug
           tools: composer:v2
 
@@ -43,10 +43,8 @@ jobs:
       - name: Run PHPUnit with coverage
         run: vendor/bin/phpunit --coverage-clover=coverage.clover
 
-      - name: Upload coverage to Scrutinizer
-        uses: sudo-bot/action-scrutinizer@latest
-        with:
-          cli-args: "--format=php-clover coverage.clover"
-          wait-for-analysis: true
-        env:
-          SCRUTINIZER_TOKEN: ${{ secrets.SCRUTINIZER_TOKEN }} 
+      - name: Trigger Scrutinizer analysis
+        run: |
+          wget https://scrutinizer-ci.com/ocular.phar
+          php ocular.phar code-coverage:upload --format=php-clover coverage.clover
+        continue-on-error: true 

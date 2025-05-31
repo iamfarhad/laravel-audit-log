@@ -13,13 +13,13 @@ build:
 
   nodes:
     analysis:
-      image: scrutinizer/scrutinizer
+      image: default-jammy
       tests:
         override:
           - php-scrutinizer-run
 
     coverage:
-      image: scrutinizer/scrutinizer
+      image: default-jammy
       tests:
         override:
           - command: vendor/bin/phpunit --coverage-clover=coverage.clover
