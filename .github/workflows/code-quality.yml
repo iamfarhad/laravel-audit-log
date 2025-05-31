@@ -3,12 +3,47 @@ name: code-quality
 on:
   push:
     branches:
-      - main
+      - '*'
   pull_request:
     branches:
-      - main
+      - '*'
 
 jobs:
+  phpstan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      COMPOSER_NO_INTERACTION: 1
+    strategy:
+      matrix:
+        php: [8.2]
+        laravel: [12.*]
+        include:
+          - laravel: 12.*
+            testbench: 10.*
+
+    name: PHPStan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "illuminate/console:${{ matrix.laravel }}" "illuminate/database:${{ matrix.laravel }}" "illuminate/filesystem:${{ matrix.laravel }}" --no-update
+          composer require "orchestra/testbench:${{ matrix.testbench }}" --dev --no-update
+          composer update --prefer-dist --no-suggest
+
+      - name: Execute PHPStan
+        run: vendor/bin/phpstan analyse
+
   test-and-analyze:
     name: Test & Analyze
     runs-on: ubuntu-latest
