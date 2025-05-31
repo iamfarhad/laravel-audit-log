@@ -21,7 +21,7 @@ final class EloquentAuditLog extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'entity_id',
@@ -92,7 +92,10 @@ final class EloquentAuditLog extends Model
 
     public function scopeDateBetween(Builder $query, $startDate, $endDate): Builder
     {
-        return $query->whereBetween('created_at', [$startDate, $endDate]);
+        return $query->where(function (Builder $query) use ($startDate, $endDate) {
+            $query->where('created_at', '>=', $startDate)
+                ->where('created_at', '<=', $endDate);
+        });
     }
 
     public static function forEntity(string $entityClass): static

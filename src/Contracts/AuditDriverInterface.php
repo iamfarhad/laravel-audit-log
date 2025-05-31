@@ -12,6 +12,13 @@ interface AuditDriverInterface
     public function store(AuditLogInterface $log): void;
 
     /**
+     * Store multiple audit log entries.
+     *
+     * @param  array<AuditLogInterface>  $logs
+     */
+    public function storeBatch(array $logs): void;
+
+    /**
      * Create storage for a new entity type if needed.
      */
     public function createStorageForEntity(string $entityClass): void;

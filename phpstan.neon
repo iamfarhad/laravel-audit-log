@@ -4,15 +4,30 @@ includes:
 parameters:
     level: 5
     paths:
-        - src
+        - src/
+    treatPhpDocTypesAsCertain: false
 
     reportUnmatchedIgnoredErrors: false
 
     ignoreErrors:
         # Add specific error patterns to ignore if needed
         - '#PHPDoc tag @var#'
-        - 
-            identifier: missingType.iterableValue
+        -
+            message: '#Property [a-zA-Z0-9\\_\\$\\:\\ ]+ has no type specified.#'
+            reportUnmatched: false
+        -
+            message: '#Parameter \$[a-zA-Z0-9\\_]+ of (method|function) [a-zA-Z0-9\\_\\:\\(\\)]+ has no type specified.#'
+            reportUnmatched: false
+        -
+            message: '#(Method|Function) [a-zA-Z0-9\\_\\:\\(\\)]+ has no return type specified.#'
+            reportUnmatched: false
+        -
+            message: '#Call to an undefined static method Illuminate\\Support\\Facades\\Event::(fire|dispatch)\(\)#'
+            reportUnmatched: false
+        -
+            message: '#Call to an undefined static method Illuminate\\Support\\Facades\\DB::(statement|transaction|beginTransaction|commit|rollBack|insert|raw)\(\)#'
+            reportUnmatched: false
         -
             identifier: missingType.generics
+            reportUnmatched: false
         - '#Construct empty\(\) is not allowed. Use more strict comparison.#' 

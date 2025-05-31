@@ -36,7 +36,8 @@ final class MySQLDriver implements AuditDriverInterface
             $oldValues = $log->getOldValues();
             $newValues = $log->getNewValues();
 
-            EloquentAuditLog::forEntity(entityClass: $log->getEntityType())->create([
+            $model = EloquentAuditLog::forEntity(entityClass: $log->getEntityType());
+            $model->fill([
                 'entity_id' => $log->getEntityId(),
                 'action' => $log->getAction(),
                 'old_values' => $oldValues !== null ? json_encode($oldValues) : null,
@@ -46,24 +47,20 @@ final class MySQLDriver implements AuditDriverInterface
                 'metadata' => json_encode($log->getMetadata()),
                 'created_at' => $log->getCreatedAt(),
             ]);
+            $model->save();
         } catch (\Exception $e) {
             throw $e;
         }
     }
 
     /**
-     * Legacy method to maintain interface compatibility.
-     * Simply stores logs one by one instead of in batch.
+     * Store multiple audit logs.
      *
      * @param  array<AuditLogInterface>  $logs
      */
     public function storeBatch(array $logs): void
     {
         foreach ($logs as $log) {
-            if (! $log instanceof AuditLogInterface) {
-                throw new \InvalidArgumentException('Log must be an instance of AuditLogInterface');
-            }
-
             $this->store($log);
         }
     }

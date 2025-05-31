@@ -87,8 +87,12 @@ final class AuditBuilder
      */
     public function log(): void
     {
-        // Merge model metadata with custom metadata
-        $metadata = array_merge($this->model->getAuditMetadata(), $this->metadata);
+        // Merge model metadata with custom metadata if available
+        $modelMetadata = method_exists($this->model, 'getAuditMetadata')
+            ? $this->model->getAuditMetadata()
+            : [];
+
+        $metadata = array_merge($modelMetadata, $this->metadata);
 
         // If the model has getAuditableAttributes method, filter values
         if (method_exists($this->model, 'getAuditableAttributes')) {
