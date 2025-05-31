@@ -102,7 +102,6 @@ checks:
     instanceof_class_exists: true
     foreach_usable_as_reference: true
     foreach_traversable: true
-    fix_doc_comments: true
     encourage_shallow_comparison: true
     deprecated_code_usage: true
     deadlock_detection_in_loops: true
@@ -126,4 +125,6 @@ checks:
     use_self_instead_of_fqcn: true
 
 tools:
-  external_code_coverage: false 
+  external_code_coverage:
+    timeout: 600
+    runs: 1 
