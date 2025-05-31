@@ -2,7 +2,8 @@ build:
   environment:
     php:
       version: 8.1
-    docker: false
+    docker:
+      enabled: false
 
   nodes:
     analysis:
