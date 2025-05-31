@@ -2,6 +2,12 @@
 
 All notable changes to `iamfarhad/laravel-audit-log` will be documented in this file.
 
+## [1.2.1] - 2025-06-01
+
+### Added
+- Added Scrutinizer configuration for improved code quality analysis
+- Enhanced static analysis and code quality checks
+
 ## [1.2.0] - 2025-05-30
 
 ### Added
