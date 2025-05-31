@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Jobs;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Facades\App;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\App;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class ProcessAuditLogJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * @param  string|null  $driverName  The name of the driver to use (default is the configured default)
