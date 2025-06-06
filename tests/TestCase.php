@@ -94,6 +94,7 @@ abstract class TestCase extends Orchestra
                 $table->string('causer_id')->nullable();
                 $table->json('metadata')->nullable();
                 $table->timestamp('created_at');
+                $table->string('source')->nullable();
 
                 $table->index('entity_id');
                 $table->index(['causer_type', 'causer_id']);

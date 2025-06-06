@@ -9,6 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Request;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
+use Carbon\Carbon;
 
 /**
  * Trait that implements the AuditableInterface to make models auditable.
@@ -22,11 +28,18 @@ trait Auditable
     {
         static::created(function (Model $model) {
             if ($model->isAuditingEnabled()) {
-                Log::debug('Dispatching ModelAudited', [
-                    'model' => get_class($model),
-                    'action' => 'created',
-                ]);
-                event(new ModelAudited($model, 'created', null, $model->getAttributes()));
+                app(AuditLogger::class)->log(new AuditLog(
+                    entityType: $model->getAuditEntityType(),
+                    entityId: $model->getKey(),
+                    action: 'created',
+                    oldValues: null,
+                    newValues: $model->getAttributes(),
+                    metadata: $model->getAuditMetadata(),
+                    causerType: app(CauserResolverInterface::class)->resolve()['type'],
+                    causerId: app(CauserResolverInterface::class)->resolve()['id'],
+                    createdAt: Carbon::now(),
+                    source: app(AuditLogger::class)->getSource(),
+                ));
             }
         });
 
@@ -38,33 +51,54 @@ trait Auditable
                 $oldValues = array_intersect_key($oldValues, $newValues);
 
                 if (! empty($newValues)) {
-                    Log::debug('Dispatching ModelAudited', [
-                        'model' => get_class($model),
-                        'action' => 'updated',
-                    ]);
-                    event(new ModelAudited($model, 'updated', $oldValues, $newValues));
+                    app(AuditLogger::class)->log(new AuditLog(
+                        entityType: $model->getAuditEntityType(),
+                        entityId: $model->getKey(),
+                        action: 'updated',
+                        oldValues: $oldValues,
+                        newValues: $newValues,
+                        metadata: $model->getAuditMetadata(),
+                        causerType: app(CauserResolverInterface::class)->resolve()['type'],
+                        causerId: app(CauserResolverInterface::class)->resolve()['id'],
+                        createdAt: Carbon::now(),
+                        source: app(AuditLogger::class)->getSource(),
+                    ));
                 }
             }
         });
 
         static::deleted(function (Model $model) {
             if ($model->isAuditingEnabled()) {
-                Log::debug('Dispatching ModelAudited', [
-                    'model' => get_class($model),
-                    'action' => 'deleted',
-                ]);
-                event(new ModelAudited($model, 'deleted', $model->getOriginal(), null));
+                app(AuditLogger::class)->log(new AuditLog(
+                    entityType: $model->getAuditEntityType(),
+                    entityId: $model->getKey(),
+                    action: 'deleted',
+                    oldValues: $model->getOriginal(),
+                    newValues: null,
+                    metadata: $model->getAuditMetadata(),
+                    causerType: app(CauserResolverInterface::class)->resolve()['type'],
+                    causerId: app(CauserResolverInterface::class)->resolve()['id'],
+                    createdAt: Carbon::now(),
+                    source: app(AuditLogger::class)->getSource(),
+                ));
             }
         });
 
         if (method_exists(static::class, 'restored')) {
             static::restored(function (Model $model) {
                 if ($model->isAuditingEnabled()) {
-                    Log::debug('Dispatching ModelAudited', [
-                        'model' => get_class($model),
-                        'action' => 'restored',
-                    ]);
-                    event(new ModelAudited($model, 'restored', null, $model->getAttributes()));
+                    app(AuditLogger::class)->log(new AuditLog(
+                        entityType: $model->getAuditEntityType(),
+                        entityId: $model->getKey(),
+                        action: 'restored',
+                        oldValues: null,
+                        newValues: $model->getAttributes(),
+                        metadata: $model->getAuditMetadata(),
+                        causerType: app(CauserResolverInterface::class)->resolve()['type'],
+                        causerId: app(CauserResolverInterface::class)->resolve()['id'],
+                        createdAt: Carbon::now(),
+                        source: app(AuditLogger::class)->getSource(),
+                    ));
                 }
             });
         }

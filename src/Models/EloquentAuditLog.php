@@ -32,6 +32,7 @@ final class EloquentAuditLog extends Model
         'causer_id',
         'metadata',
         'created_at',
+        'source',
     ];
 
     protected $casts = [

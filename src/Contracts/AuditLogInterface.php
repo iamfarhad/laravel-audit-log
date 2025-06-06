@@ -54,6 +54,11 @@ interface AuditLogInterface
     public function getCreatedAt(): DateTimeInterface;
 
     /**
+     * Get the source of the audit log.
+     */
+    public function getSource(): ?string;
+
+    /**
      * Convert to array representation.
      */
     public function toArray(): array;

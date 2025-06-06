@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\DB;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\Post;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
@@ -105,9 +106,10 @@ final class AuditableTraitTest extends TestCase
         $this->assertArrayNotHasKey('updated_at', $auditableAttributes);
     }
 
-    public function test_model_events_dispatch_audit_events(): void
+    public function test_model_events_create_audit_logs(): void
     {
-        Event::fake([ModelAudited::class]);
+        // Clear any existing logs
+        DB::table('audit_users_logs')->delete();
 
         // Test created event
         $user = User::create([
@@ -117,44 +119,33 @@ final class AuditableTraitTest extends TestCase
             'is_active' => true,
         ]);
 
-        Event::assertDispatched(ModelAudited::class, function ($event) use ($user) {
-            return $event->model->is($user) &&
-                $event->action === 'created' &&
-                $event->oldValues === null &&
-                is_array($event->newValues);
-        });
-
-        Event::fake([ModelAudited::class]);
+        $this->assertDatabaseHas('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'created',
+        ]);
 
         // Test updated event
         $user->name = 'Updated Name';
         $user->save();
 
-        Event::assertDispatched(ModelAudited::class, function ($event) use ($user) {
-            return $event->model->is($user) &&
-                $event->action === 'updated' &&
-                is_array($event->oldValues) &&
-                is_array($event->newValues) &&
-                $event->oldValues['name'] === 'Test User' &&
-                $event->newValues['name'] === 'Updated Name';
-        });
-
-        Event::fake([ModelAudited::class]);
+        $this->assertDatabaseHas('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'updated',
+        ]);
 
         // Test deleted event
         $user->delete();
 
-        Event::assertDispatched(ModelAudited::class, function ($event) use ($user) {
-            return $event->model->is($user) &&
-                $event->action === 'deleted' &&
-                is_array($event->oldValues) &&
-                $event->newValues === null;
-        });
+        $this->assertDatabaseHas('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'deleted',
+        ]);
     }
 
-    public function test_disabled_auditing_does_not_dispatch_events(): void
+    public function test_disabled_auditing_does_not_create_logs(): void
     {
-        Event::fake([ModelAudited::class]);
+        // Clear any existing logs
+        DB::table('audit_users_logs')->delete();
 
         $user = new User;
         $user->disableAuditing();
@@ -164,15 +155,24 @@ final class AuditableTraitTest extends TestCase
         $user->is_active = true;
         $user->save();
 
-        Event::assertNotDispatched(ModelAudited::class);
+        $this->assertDatabaseMissing('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'created',
+        ]);
 
         $user->name = 'Updated Name';
         $user->save();
 
-        Event::assertNotDispatched(ModelAudited::class);
+        $this->assertDatabaseMissing('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'updated',
+        ]);
 
         $user->delete();
 
-        Event::assertNotDispatched(ModelAudited::class);
+        $this->assertDatabaseMissing('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'deleted',
+        ]);
     }
 }

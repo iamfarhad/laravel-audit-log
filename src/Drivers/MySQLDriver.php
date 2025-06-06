@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
@@ -46,6 +47,7 @@ final class MySQLDriver implements AuditDriverInterface
                 'causer_id' => $log->getCauserId(),
                 'metadata' => json_encode($log->getMetadata()),
                 'created_at' => $log->getCreatedAt(),
+                'source' => $log->getSource(),
             ]);
             $model->save();
         } catch (\Exception $e) {
@@ -83,6 +85,7 @@ final class MySQLDriver implements AuditDriverInterface
             $table->string('causer_id')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('created_at');
+            $table->string('source')->nullable();
 
             $table->index('entity_id');
             $table->index('causer_id');

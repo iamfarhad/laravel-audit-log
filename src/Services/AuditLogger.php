@@ -7,6 +7,8 @@ namespace iamfarhad\LaravelAuditLog\Services;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Request;
 
 final class AuditLogger
 {
@@ -35,5 +37,24 @@ final class AuditLogger
         };
 
         return new self($driver);
+    }
+
+    public function getSource(): ?string
+    {
+
+        if (App::runningInConsole()) {
+            $command = request()->server('argv')[1] ?? null;
+
+            if ($command) {
+                return $command;
+            }
+        }
+
+        if ($route = Request::route()) {
+            $controller = $route->getActionName();
+            return is_string($controller) ? $controller : 'http';
+        }
+
+        return null;
     }
 }

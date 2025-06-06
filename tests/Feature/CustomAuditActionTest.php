@@ -54,14 +54,15 @@ final class CustomAuditActionTest extends TestCase
             action: 'approved',
             oldValues: ['status' => 'draft'],
             newValues: ['status' => 'published'],
+            causerType: User::class,
+            causerId: $this->user->id,
             metadata: [
                 'approved_by' => $this->user->id,
                 'approved_at' => now()->toDateTimeString(),
                 'comments' => 'Content looks good',
             ],
-            causerType: User::class,
-            causerId: $this->user->id,
-            createdAt: Carbon::now()
+            createdAt: Carbon::now(),
+            source: 'test'
         );
 
         // Log the custom action
@@ -82,14 +83,15 @@ final class CustomAuditActionTest extends TestCase
             action: 'exported',
             oldValues: null,
             newValues: null,
+            causerType: User::class,
+            causerId: $this->user->id,
             metadata: [
                 'format' => 'pdf',
                 'exported_by' => $this->user->id,
                 'exported_at' => now()->toDateTimeString(),
             ],
-            causerType: User::class,
-            causerId: $this->user->id,
-            createdAt: Carbon::now()
+            createdAt: Carbon::now(),
+            source: 'test'
         );
 
         // Log the custom action

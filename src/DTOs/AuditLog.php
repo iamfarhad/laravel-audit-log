@@ -19,7 +19,8 @@ final class AuditLog implements AuditLogInterface
         private readonly ?string $causerType,
         private readonly string|int|null $causerId,
         private readonly array $metadata,
-        private readonly DateTimeInterface $createdAt
+        private readonly DateTimeInterface $createdAt,
+        private readonly ?string $source
     ) {}
 
     public function getEntityType(): string
@@ -67,6 +68,11 @@ final class AuditLog implements AuditLogInterface
         return $this->createdAt;
     }
 
+    public function getSource(): ?string
+    {
+        return $this->source;
+    }
+
     public function toArray(): array
     {
         return [
@@ -81,6 +87,7 @@ final class AuditLog implements AuditLogInterface
             'created_at' => $this->createdAt instanceof Carbon
                 ? $this->createdAt->toIso8601String()
                 : $this->createdAt->format(DateTimeInterface::ATOM),
+            'source' => $this->source,
         ];
     }
 
@@ -100,7 +107,8 @@ final class AuditLog implements AuditLogInterface
             metadata: $data['metadata'] ?? [],
             createdAt: $data['created_at'] instanceof DateTimeInterface
                 ? $data['created_at']
-                : Carbon::parse($data['created_at'])
+                : Carbon::parse($data['created_at']),
+            source: $data['source'] ?? null,
         );
     }
 }

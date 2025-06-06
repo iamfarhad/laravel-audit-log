@@ -34,6 +34,7 @@ final class MySQLDriverTest extends TestCase
         $mockLog->shouldReceive('getCauserId')->andReturn('2');
         $mockLog->shouldReceive('getMetadata')->andReturn(['ip' => '127.0.0.1']);
         $mockLog->shouldReceive('getCreatedAt')->andReturn(Carbon::now());
+        $mockLog->shouldReceive('getSource')->andReturn('test');
 
         // Store the log
         $this->driver->store($mockLog);
@@ -60,6 +61,7 @@ final class MySQLDriverTest extends TestCase
         $mockLog1->shouldReceive('getCauserId')->andReturn('2');
         $mockLog1->shouldReceive('getMetadata')->andReturn(['ip' => '127.0.0.1']);
         $mockLog1->shouldReceive('getCreatedAt')->andReturn(Carbon::now());
+        $mockLog1->shouldReceive('getSource')->andReturn('test');
 
         // Mock second AuditLogInterface
         $mockLog2 = Mockery::mock(AuditLogInterface::class);
@@ -72,6 +74,7 @@ final class MySQLDriverTest extends TestCase
         $mockLog2->shouldReceive('getCauserId')->andReturn('4');
         $mockLog2->shouldReceive('getMetadata')->andReturn(['ip' => '127.0.0.2']);
         $mockLog2->shouldReceive('getCreatedAt')->andReturn(Carbon::now());
+        $mockLog2->shouldReceive('getSource')->andReturn('test');
 
         // Store batch of logs
         $this->driver->storeBatch([$mockLog1, $mockLog2]);

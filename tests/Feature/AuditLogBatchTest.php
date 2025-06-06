@@ -56,10 +56,11 @@ final class AuditLogBatchTest extends TestCase
                 action: 'login',
                 oldValues: null,
                 newValues: ['last_login_at' => now()->toDateTimeString()],
-                metadata: ['ip' => '127.0.0.1'],
                 causerType: null,
                 causerId: null,
-                createdAt: Carbon::now()
+                metadata: ['ip' => '127.0.0.1'],
+                createdAt: Carbon::now(),
+                source: 'test'
             ),
             new AuditLog(
                 entityType: Post::class,
@@ -67,10 +68,11 @@ final class AuditLogBatchTest extends TestCase
                 action: 'viewed',
                 oldValues: null,
                 newValues: null,
-                metadata: ['viewer' => 'guest'],
                 causerType: null,
                 causerId: null,
-                createdAt: Carbon::now()
+                metadata: ['viewer' => 'guest'],
+                createdAt: Carbon::now(),
+                source: 'test'
             ),
         ];
 

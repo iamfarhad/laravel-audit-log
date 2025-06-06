@@ -11,10 +11,13 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/iamfarhad/laravel-audit-log/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/iamfarhad/laravel-audit-log/actions/workflows/tests.yml)
 [![Code Style](https://img.shields.io/github/actions/workflow/status/iamfarhad/laravel-audit-log/coding-standards.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/iamfarhad/laravel-audit-log/actions/workflows/coding-standards.yml)
 [![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg?style=flat-square)](https://github.com/iamfarhad/laravel-audit-log)
+[![Scrutinizer Code Quality](https://img.shields.io/scrutinizer/g/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://scrutinizer-ci.com/g/iamfarhad/laravel-audit-log)
 
 ## Overview
 
-**Laravel Audit Logger** is a powerful and flexible package designed to provide detailed audit logging for Laravel applications. It enables tracking of all changes to your Eloquent models, ensuring compliance with regulatory requirements, aiding in debugging, and maintaining data integrity. Built with modern PHP and Laravel practices, this package adheres to strict typing, PSR-12 coding standards, and leverages dependency injection for maximum testability and maintainability.
+**Laravel Audit Logger** is a powerful and flexible package designed to provide detailed audit logging for Laravel applications. It enables tracking of all changes to your Eloquent models with comprehensive source tracking, ensuring compliance with regulatory requirements, aiding in debugging, and maintaining data integrity. Built with modern PHP and Laravel practices, this package adheres to strict typing, PSR-12 coding standards, and leverages dependency injection for maximum testability and maintainability.
+
+The package uses a high-performance direct logging architecture while maintaining flexibility through optional event integration, making it suitable for both small applications and enterprise-scale systems.
 
 ## Table of Contents
 
@@ -25,6 +28,7 @@
 - [Usage](#usage)
   - [Basic Usage](#basic-usage)
   - [Advanced Usage](#advanced-usage)
+  - [Source Tracking](#source-tracking)
 - [Customizing Audit Logging](#customizing-audit-logging)
 - [Retrieving Audit Logs](#retrieving-audit-logs)
 - [Performance Optimization](#performance-optimization)
@@ -38,9 +42,10 @@
 
 - **Entity-Specific Audit Tables**: Automatically creates dedicated tables for each audited model to optimize performance and querying.
 - **Comprehensive Change Tracking**: Logs all CRUD operations (create, update, delete, restore) with old and new values.
+- **Source Tracking**: Automatically tracks the source of changes (console commands, HTTP routes, etc.) for enhanced debugging and compliance.
 - **Customizable Field Logging**: Control which fields to include or exclude from auditing.
 - **User Tracking**: Automatically identifies and logs the user (causer) responsible for changes.
-- **Event-Driven Architecture**: Utilizes Laravel Events for decoupled and extensible audit logging.
+- **Direct Logging Architecture**: Uses direct service calls for high-performance, synchronous audit logging with optional event integration.
 - **Batch Processing**: Supports batch operations for high-performance logging in large-scale applications.
 - **Type Safety**: Built with PHP 8.1+ strict typing and modern features like `readonly` properties and enums.
 - **Extensible Drivers**: Supports multiple storage drivers (currently MySQL) with the ability to implement custom drivers.
@@ -114,6 +119,35 @@ return [
 ```
 
 Ensure you review and adjust these settings based on your application's needs, especially for sensitive data exclusion and performance optimization.
+
+### Database Schema
+
+The audit logger creates tables with the following structure for each audited model:
+
+```sql
+CREATE TABLE audit_{model_name}_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    entity_id VARCHAR(255) NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    old_values JSON NULL,
+    new_values JSON NULL,
+    causer_type VARCHAR(255) NULL,
+    causer_id VARCHAR(255) NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP NOT NULL,
+    source VARCHAR(255) NULL,
+    
+    INDEX idx_entity_id (entity_id),
+    INDEX idx_causer (causer_type, causer_id),
+    INDEX idx_created_at (created_at),
+    INDEX idx_source (source)
+);
+```
+
+The `source` field is automatically populated to track the origin of changes:
+- Console commands: Command name (e.g., `app:send-emails`)
+- HTTP requests: Controller action (e.g., `App\Http\Controllers\UserController@update`)
+- Background jobs: Job class name
 
 ## Usage
 
@@ -223,6 +257,55 @@ final class Transaction extends Model
 }
 ```
 
+#### Source Tracking
+
+The audit logger automatically tracks the source of changes to help with debugging and compliance. The source field captures:
+
+- **Console Commands**: Artisan command names (e.g., `app:send-emails`, `migrate`, `queue:work`)
+- **HTTP Routes**: Controller action names or route names for web requests
+- **Background Jobs**: Job class names when changes occur within queued jobs
+
+```php
+// Example audit log entries with source tracking:
+
+// From console command: php artisan app:send-emails
+[
+    'entity_id' => '1',
+    'action' => 'updated',
+    'old_values' => '{"email": "old@example.com"}',
+    'new_values' => '{"email": "new@example.com"}',
+    'source' => 'app:send-emails',
+    'created_at' => '2024-01-15 10:30:00'
+]
+
+// From HTTP request
+[
+    'entity_id' => '1', 
+    'action' => 'updated',
+    'old_values' => '{"status": "pending"}',
+    'new_values' => '{"status": "approved"}',
+    'source' => 'App\\Http\\Controllers\\OrderController@approve',
+    'created_at' => '2024-01-15 10:35:00'
+]
+```
+
+You can query audit logs by source to track changes from specific commands or controllers:
+
+```php
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+
+// Find all changes made by a specific console command
+$commandLogs = EloquentAuditLog::where('source', 'app:send-emails')->get();
+
+// Find all changes made through web interface
+$webLogs = EloquentAuditLog::where('source', 'like', 'App\\Http\\Controllers\\%')->get();
+
+// Find changes from console commands
+$consoleLogs = EloquentAuditLog::whereNotNull('source')
+    ->where('source', 'not like', 'App\\Http\\Controllers\\%')
+    ->get();
+```
+
 #### Temporarily Disabling Auditing
 
 For specific operations where auditing is not required, you can disable it temporarily:
@@ -236,7 +319,25 @@ $user->enableAuditing();
 
 #### Custom Audit Events
 
-To log custom actions beyond standard CRUD operations, dispatch the `ModelAudited` event manually:
+To log custom actions beyond standard CRUD operations, use the fluent API provided by the `audit()` method for direct, high-performance logging:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use App\Models\Order;
+
+$order = Order::find(1);
+$order->audit()
+    ->custom('status_changed')
+    ->from(['status' => 'pending'])
+    ->to(['status' => 'shipped'])
+    ->withMetadata(['ip' => request()->ip(), 'user_agent' => request()->userAgent()])
+    ->log();
+```
+
+Alternatively, you can still use the traditional event-driven approach if needed:
 
 ```php
 <?php
@@ -354,10 +455,22 @@ $adminLogs = EloquentAuditLog::forEntity(User::class)
     ->where('entity_id', 1)
     ->get();
 
+// Filter by source (console commands, HTTP routes, etc.)
+$consoleLogs = EloquentAuditLog::forEntity(User::class)
+    ->where('source', 'app:send-emails')
+    ->where('entity_id', 1)
+    ->get();
+
+$webLogs = EloquentAuditLog::forEntity(User::class)
+    ->where('source', 'like', 'App\\Http\\Controllers\\%')
+    ->where('entity_id', 1)
+    ->get();
+
 // Combine multiple scopes for precise filtering
 $filteredLogs = EloquentAuditLog::forEntity(User::class)
     ->action('updated')
     ->causer(1)
+    ->where('source', 'app:send-emails')
     ->dateBetween(now()->subDays(7), now())
     ->where('entity_id', 1)
     ->orderBy('created_at', 'desc')
@@ -400,6 +513,15 @@ When writing tests for your application, ensure you cover audit logging behavior
 - **Audit Tables Not Created**: Ensure `'auto_migration' => true` in your configuration. If disabled, manually create tables using `AuditLogger::driver()->createStorageForEntity(Model::class)`.
 - **Missing Logs**: Verify that fields aren't excluded globally or in the model, and ensure auditing isn't disabled for the operation.
 - **Causer Not Recorded**: Confirm that authentication is set up correctly and the user is logged in during the operation.
+- **Source Field Empty**: The source field should automatically populate. If it's null, check that:
+  - For console commands: `$_SERVER['argv']` is available and contains the command name
+  - For HTTP requests: The route is properly registered and accessible via `Request::route()`
+  - The application is running in the expected context (console vs. HTTP)
+- **Migration Issues**: If upgrading from a previous version, ensure your existing audit tables include the `source` column. You may need to add it manually:
+  ```sql
+  ALTER TABLE audit_your_model_logs ADD COLUMN source VARCHAR(255) NULL;
+  CREATE INDEX idx_source ON audit_your_model_logs (source);
+  ```
 
 ## Contributing
 
