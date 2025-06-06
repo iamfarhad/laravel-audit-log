@@ -30,4 +30,5 @@ parameters:
         -
             identifier: missingType.generics
             reportUnmatched: false
-        - '#Construct empty\(\) is not allowed. Use more strict comparison.#' 
+        - '#Construct empty\(\) is not allowed. Use more strict comparison.#'
+        - '#Dynamic call to static method Illuminate\\Database\\Query\\Builder::whereNotNull\(\)#' 

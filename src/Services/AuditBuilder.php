@@ -104,8 +104,13 @@ final class AuditBuilder
             $this->newValues = $this->model->getAuditableAttributes($this->newValues);
         }
 
+        // Ensure the model has the getAuditEntityType method
+        $entityType = method_exists($this->model, 'getAuditEntityType')
+            ? $this->model->getAuditEntityType()
+            : get_class($this->model);
+
         app(AuditLogger::class)->log(new AuditLog(
-            entityType: $this->model->getAuditEntityType(),
+            entityType: $entityType,
             entityId: $this->model->getKey(),
             action: $this->action,
             oldValues: $this->oldValues,
@@ -142,9 +147,9 @@ final class AuditBuilder
             return 'console';
         }
 
-        if ($route = Request::route()) {
+        $route = Request::route();
+        if ($route !== null && is_object($route) && method_exists($route, 'getActionName')) {
             $controller = $route->getActionName();
-
             return is_string($controller) ? $controller : 'http';
         }
 

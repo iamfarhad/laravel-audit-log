@@ -5,16 +5,30 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
 use Mockery;
-use Illuminate\Support\Facades\Event;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 
 final class AuditBuilderTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
-        Event::fake();
+
+        // Create a fake AuditLogger since the class is final
+        $fakeLogger = new class {
+            public function log(\iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface $log): void
+            {
+                // Do nothing - this is a fake for unit tests
+            }
+
+            public function batch(array $logs): void
+            {
+                // Do nothing - this is a fake for unit tests
+            }
+        };
+
+        $this->app->instance(AuditLogger::class, $fakeLogger);
     }
 
     public function test_can_build_and_log_custom_audit_event_with_fluent_api(): void

@@ -7,12 +7,9 @@ namespace iamfarhad\LaravelAuditLog;
 use Illuminate\Support\ServiceProvider;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
-use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
-use Illuminate\Support\Facades\Event as EventFacade;
 use iamfarhad\LaravelAuditLog\Services\CauserResolver;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Listeners\AuditModelChanges;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
 final class AuditLoggerServiceProvider extends ServiceProvider
@@ -23,7 +20,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/audit-logger.php',
+            __DIR__ . '/../config/audit-logger.php',
             'audit-logger'
         );
 
@@ -32,7 +29,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Register the causer resolver
         $this->app->singleton(
             CauserResolverInterface::class,
-            fn ($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
+            fn($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
                 ? $app->make($app['config']['audit-logger.causer']['resolver'])
                 : new CauserResolver(
                     guard: $app['config']['audit-logger.causer']['guard'] ?? null,
@@ -59,11 +56,10 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Publish config
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/audit-logger.php' => config_path('audit-logger.php'),
+                __DIR__ . '/../config/audit-logger.php' => config_path('audit-logger.php'),
             ], 'audit-logger-config');
         }
 
-        // Register event listeners
-        EventFacade::listen(ModelAudited::class, [AuditModelChanges::class, 'handle']);
+        // Event listeners removed - using direct logging approach
     }
 }

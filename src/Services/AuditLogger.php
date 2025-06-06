@@ -50,9 +50,9 @@ final class AuditLogger
             }
         }
 
-        if ($route = Request::route()) {
+        $route = Request::route();
+        if ($route !== null && is_object($route) && method_exists($route, 'getActionName')) {
             $controller = $route->getActionName();
-
             return is_string($controller) ? $controller : 'http';
         }
 

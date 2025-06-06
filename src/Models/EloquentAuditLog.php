@@ -106,9 +106,12 @@ final class EloquentAuditLog extends Model
 
     public function scopeFromConsole(Builder $query): Builder
     {
-        return $query->whereNotNull('source')
-            ->where('source', 'not like', 'App\\Http\\Controllers\\%')
-            ->where('source', 'not like', 'App\\\\Http\\\\Controllers\\\\%');
+        /** @var Builder $query */
+        $query->whereNotNull('source');
+        $query->where('source', 'not like', 'App\\Http\\Controllers\\%');
+        $query->where('source', 'not like', 'App\\\\Http\\\\Controllers\\\\%');
+
+        return $query;
     }
 
     public function scopeFromHttp(Builder $query): Builder
@@ -127,7 +130,7 @@ final class EloquentAuditLog extends Model
 
     public function scopeFromController(Builder $query, ?string $controller = null): Builder
     {
-        if ($controller) {
+        if ($controller !== null && $controller !== '') {
             return $query->where('source', 'like', "%{$controller}%");
         }
 

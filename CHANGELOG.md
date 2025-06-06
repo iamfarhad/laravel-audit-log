@@ -15,6 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+## [1.3.1] - 2025-06-06
+
+### Fixed
+- Fixed PHPStan static analysis issues at Level 5 with strict rules
+- Removed references to deleted `ModelAudited` event and `AuditModelChanges` listener classes
+- Improved type safety with better null and type checking in route handling
+- Enhanced method existence checks in `AuditBuilder` service
+- Fixed scope method return types in `EloquentAuditLog` model
+- Updated unit tests to work with direct logging architecture (removed event dependencies)
+- Cleaned up unused imports and improved code organization
+
+### Changed
+- Added PHPStan ignore rule for dynamic method call warnings in query scopes
+- Enhanced test setup with proper service mocking for unit tests
+- Improved code quality and maintainability
+
 ## [1.3.0] - 2025-06-06
 
 ### Added
@@ -138,7 +154,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Query scopes for efficient log retrieval
 - Batch operations for performance optimization
 
-[Unreleased]: https://github.com/iamfarhad/laravel-audit-log/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/iamfarhad/laravel-audit-log/compare/1.3.1...HEAD
+[1.3.1]: https://github.com/iamfarhad/laravel-audit-log/compare/1.3.0...1.3.1
 [1.3.0]: https://github.com/iamfarhad/laravel-audit-log/compare/1.2.1...1.3.0
 [1.2.1]: https://github.com/iamfarhad/laravel-audit-log/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/iamfarhad/laravel-audit-log/compare/1.1.0...1.2.0
