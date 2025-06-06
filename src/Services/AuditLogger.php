@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Request;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Request;
 
 final class AuditLogger
 {
@@ -52,6 +52,7 @@ final class AuditLogger
 
         if ($route = Request::route()) {
             $controller = $route->getActionName();
+
             return is_string($controller) ? $controller : 'http';
         }
 

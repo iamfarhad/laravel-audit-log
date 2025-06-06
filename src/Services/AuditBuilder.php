@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Carbon;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
-use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 
 /**
@@ -136,7 +135,7 @@ final class AuditBuilder
             }
 
             // Fallback to check if we have any argv[1] that looks like a command
-            if (isset($argv[1]) && !str_contains($argv[1], '/') && !str_contains($argv[1], '.php')) {
+            if (isset($argv[1]) && ! str_contains($argv[1], '/') && ! str_contains($argv[1], '.php')) {
                 return $argv[1];
             }
 
@@ -145,6 +144,7 @@ final class AuditBuilder
 
         if ($route = Request::route()) {
             $controller = $route->getActionName();
+
             return is_string($controller) ? $controller : 'http';
         }
 

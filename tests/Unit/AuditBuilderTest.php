@@ -7,7 +7,6 @@ namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 use Mockery;
 use Illuminate\Support\Facades\Event;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
-use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
 
 final class AuditBuilderTest extends TestCase

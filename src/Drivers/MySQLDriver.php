@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;

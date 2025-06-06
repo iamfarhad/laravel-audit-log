@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\Post;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
-use iamfarhad\LaravelAuditLog\Events\ModelAudited;
 
 final class AuditableTraitTest extends TestCase
 {
