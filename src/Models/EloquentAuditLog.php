@@ -99,6 +99,44 @@ final class EloquentAuditLog extends Model
         });
     }
 
+    public function scopeForSource(Builder $query, string $source): Builder
+    {
+        return $query->where('source', $source);
+    }
+
+    public function scopeFromConsole(Builder $query): Builder
+    {
+        return $query->whereNotNull('source')
+            ->where('source', 'not like', 'App\\Http\\Controllers\\%')
+            ->where('source', 'not like', 'App\\\\Http\\\\Controllers\\\\%');
+    }
+
+    public function scopeFromHttp(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query) {
+            $query->where('source', 'like', 'App\\Http\\Controllers\\%')
+                ->orWhere('source', 'like', 'App\\\\Http\\\\Controllers\\\\%')
+                ->orWhere('source', '=', 'http');
+        });
+    }
+
+    public function scopeFromCommand(Builder $query, string $command): Builder
+    {
+        return $query->where('source', $command);
+    }
+
+    public function scopeFromController(Builder $query, ?string $controller = null): Builder
+    {
+        if ($controller) {
+            return $query->where('source', 'like', "%{$controller}%");
+        }
+
+        return $query->where(function (Builder $query) {
+            $query->where('source', 'like', 'App\\Http\\Controllers\\%')
+                ->orWhere('source', 'like', 'App\\\\Http\\\\Controllers\\\\%');
+        });
+    }
+
     public static function forEntity(string $entityClass): static
     {
         $className = Str::snake(class_basename($entityClass));

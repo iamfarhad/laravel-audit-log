@@ -289,20 +289,44 @@ The audit logger automatically tracks the source of changes to help with debuggi
 ]
 ```
 
-You can query audit logs by source to track changes from specific commands or controllers:
+You can query audit logs by source using convenient scopes:
 
 ```php
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
 
+// Using dedicated source scopes for cleaner queries
+
 // Find all changes made by a specific console command
-$commandLogs = EloquentAuditLog::where('source', 'app:send-emails')->get();
+$commandLogs = EloquentAuditLog::forEntity(User::class)
+    ->fromCommand('app:send-emails')
+    ->get();
 
-// Find all changes made through web interface
-$webLogs = EloquentAuditLog::where('source', 'like', 'App\\Http\\Controllers\\%')->get();
+// Find all changes made through console commands
+$consoleLogs = EloquentAuditLog::forEntity(User::class)
+    ->fromConsole()
+    ->get();
 
-// Find changes from console commands
-$consoleLogs = EloquentAuditLog::whereNotNull('source')
-    ->where('source', 'not like', 'App\\Http\\Controllers\\%')
+// Find all changes made through HTTP requests
+$webLogs = EloquentAuditLog::forEntity(User::class)
+    ->fromHttp()
+    ->get();
+
+// Find changes from a specific controller
+$controllerLogs = EloquentAuditLog::forEntity(User::class)
+    ->fromController('UserController')
+    ->get();
+
+// Find changes by exact source match
+$exactSourceLogs = EloquentAuditLog::forEntity(User::class)
+    ->forSource('app:send-emails')
+    ->get();
+
+// Combine with other scopes
+$filteredLogs = EloquentAuditLog::forEntity(User::class)
+    ->fromConsole()
+    ->forAction('updated')
+    ->dateBetween(now()->subWeek(), now())
+    ->orderBy('created_at', 'desc')
     ->get();
 ```
 
@@ -337,24 +361,7 @@ $order->audit()
     ->log();
 ```
 
-Alternatively, you can still use the traditional event-driven approach if needed:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-use Illuminate\Support\Facades\Event;
-use iamfarhad\LaravelAuditLog\Events\ModelAudited;
-
-$order = Order::find(1);
-Event::dispatch(new ModelAudited(
-    model: $order,
-    action: 'status_changed',
-    oldValues: ['status' => 'pending'],
-    newValues: ['status' => 'shipped']
-));
-```
+This approach provides better performance than event-driven architectures since it logs directly to the database without the overhead of event dispatching and listening.
 
 #### Fluent API for Custom Audit Events
 
@@ -438,7 +445,7 @@ $logs = EloquentAuditLog::forEntity(User::class)
 
 // Use scope to filter by action type
 $createdLogs = EloquentAuditLog::forEntity(User::class)
-    ->action('created')
+    ->forAction('created')
     ->where('entity_id', 1)
     ->get();
 
@@ -451,26 +458,31 @@ $lastMonthLogs = EloquentAuditLog::forEntity(User::class)
 
 // Use scope to filter by causer (user who performed the action)
 $adminLogs = EloquentAuditLog::forEntity(User::class)
-    ->causer(1) // Assuming causer_id 1 is the admin
+    ->forCauserId(1) // Assuming causer_id 1 is the admin
     ->where('entity_id', 1)
     ->get();
 
-// Filter by source (console commands, HTTP routes, etc.)
+// Filter by source using dedicated scopes
 $consoleLogs = EloquentAuditLog::forEntity(User::class)
-    ->where('source', 'app:send-emails')
+    ->fromCommand('app:send-emails')
     ->where('entity_id', 1)
     ->get();
 
 $webLogs = EloquentAuditLog::forEntity(User::class)
-    ->where('source', 'like', 'App\\Http\\Controllers\\%')
+    ->fromHttp()
+    ->where('entity_id', 1)
+    ->get();
+
+$controllerLogs = EloquentAuditLog::forEntity(User::class)
+    ->fromController('UserController')
     ->where('entity_id', 1)
     ->get();
 
 // Combine multiple scopes for precise filtering
 $filteredLogs = EloquentAuditLog::forEntity(User::class)
-    ->action('updated')
-    ->causer(1)
-    ->where('source', 'app:send-emails')
+    ->forAction('updated')
+    ->forCauserId(1)
+    ->fromCommand('app:send-emails')
     ->dateBetween(now()->subDays(7), now())
     ->where('entity_id', 1)
     ->orderBy('created_at', 'desc')
@@ -479,6 +491,51 @@ $filteredLogs = EloquentAuditLog::forEntity(User::class)
 ```
 
 These scopes allow for flexible and efficient querying of audit logs, making it easier to analyze changes based on action type, date range, or the user responsible for the change.
+
+### Available Query Scopes
+
+The `EloquentAuditLog` model provides several convenient scopes for filtering audit logs:
+
+#### Entity and Basic Filtering
+- `forEntity(string $entityClass)` - Filter by entity type (e.g., `User::class`)
+- `forEntityId($entityId)` - Filter by entity ID
+- `forAction(string $action)` - Filter by action (`created`, `updated`, `deleted`, etc.)
+- `forCauser(string $causerClass)` - Filter by causer type
+- `forCauserId($causerId)` - Filter by causer ID
+
+#### Date Filtering
+- `forCreatedAt($createdAt)` - Filter by exact creation date
+- `dateGreaterThan($date)` - Filter for logs after a specific date
+- `dateLessThan($date)` - Filter for logs before a specific date
+- `dateBetween($startDate, $endDate)` - Filter for logs within a date range
+
+#### Source Filtering
+- `forSource(string $source)` - Filter by exact source match
+- `fromConsole()` - Filter for logs from console commands
+- `fromHttp()` - Filter for logs from HTTP requests
+- `fromCommand(string $command)` - Filter by specific console command
+- `fromController(string $controller = null)` - Filter by controller (or all controllers if no parameter)
+
+```php
+// Examples of scope combinations
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+
+// Complex filtering example
+$logs = EloquentAuditLog::forEntity(User::class)
+    ->forAction('updated')
+    ->fromConsole()
+    ->dateBetween(now()->subWeek(), now())
+    ->forCauserId(1)
+    ->orderBy('created_at', 'desc')
+    ->paginate(20);
+
+// Find all user updates from a specific command in the last 24 hours
+$recentCommandLogs = EloquentAuditLog::forEntity(User::class)
+    ->forAction('updated')
+    ->fromCommand('app:sync-users')
+    ->dateGreaterThan(now()->subDay())
+    ->get();
+```
 
 ## Performance Optimization
 
