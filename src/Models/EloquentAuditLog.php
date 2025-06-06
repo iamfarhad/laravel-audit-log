@@ -11,6 +11,11 @@ use Illuminate\Database\Eloquent\Builder;
 final class EloquentAuditLog extends Model
 {
     /**
+     * Cache for configuration values to avoid repeated config() calls.
+     */
+    private static ?array $configCache = null;
+
+    /**
      * Indicates if the model should be timestamped.
      * We handle the created_at timestamp manually.
      *
@@ -131,13 +136,28 @@ final class EloquentAuditLog extends Model
     public function scopeFromController(Builder $query, ?string $controller = null): Builder
     {
         if ($controller !== null && $controller !== '') {
-            return $query->where('source', 'like', "%{$controller}%");
+            // Escape the controller string to prevent SQL injection
+            $escapedController = str_replace(['%', '_'], ['\\%', '\\_'], $controller);
+
+            return $query->where('source', 'like', "%{$escapedController}%");
         }
 
         return $query->where(function (Builder $query) {
             $query->where('source', 'like', 'App\\Http\\Controllers\\%')
                 ->orWhere('source', 'like', 'App\\\\Http\\\\Controllers\\\\%');
         });
+    }
+
+    /**
+     * Get cached configuration to avoid repeated config() calls.
+     */
+    private static function getConfigCache(): array
+    {
+        if (self::$configCache === null) {
+            self::$configCache = config('audit-logger');
+        }
+
+        return self::$configCache;
     }
 
     public static function forEntity(string $entityClass): static
@@ -147,8 +167,9 @@ final class EloquentAuditLog extends Model
         // Handle pluralization
         $tableName = Str::plural($className);
 
-        $tablePrefix = config('audit-logger.drivers.mysql.table_prefix', 'audit_');
-        $tableSuffix = config('audit-logger.drivers.mysql.table_suffix', '_logs');
+        $config = self::getConfigCache();
+        $tablePrefix = $config['drivers']['mysql']['table_prefix'] ?? 'audit_';
+        $tableSuffix = $config['drivers']['mysql']['table_suffix'] ?? '_logs';
 
         $table = "{$tablePrefix}{$tableName}{$tableSuffix}";
 

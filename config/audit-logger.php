@@ -53,7 +53,24 @@ return [
     |
     */
     'fields' => [
-        'exclude' => ['password', 'remember_token', 'api_token'],
+        'exclude' => [
+            'password',
+            'remember_token',
+            'api_token',
+            'email_verified_at',
+            'password_hash',
+            'secret',
+            'token',
+            'private_key',
+            'access_token',
+            'refresh_token',
+            'api_key',
+            'secret_key',
+            'stripe_id',
+            'pm_type',
+            'pm_last_four',
+            'trial_ends_at',
+        ],
         'include_timestamps' => true,
     ],
 

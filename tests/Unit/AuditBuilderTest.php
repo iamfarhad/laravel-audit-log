@@ -27,6 +27,11 @@ final class AuditBuilderTest extends TestCase
             {
                 // Do nothing - this is a fake for unit tests
             }
+
+            public function getSource(): ?string
+            {
+                return 'test-source';
+            }
         };
 
         $this->app->instance(AuditLogger::class, $fakeLogger);
