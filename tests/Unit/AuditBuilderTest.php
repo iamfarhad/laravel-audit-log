@@ -6,8 +6,8 @@ namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
 use Mockery;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
-use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
 
 final class AuditBuilderTest extends TestCase
 {
@@ -16,7 +16,8 @@ final class AuditBuilderTest extends TestCase
         parent::setUp();
 
         // Create a fake AuditLogger since the class is final
-        $fakeLogger = new class {
+        $fakeLogger = new class
+        {
             public function log(\iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface $log): void
             {
                 // Do nothing - this is a fake for unit tests
