@@ -46,6 +46,11 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: xdebug
 
+      - name: Install latest OpenSSL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssl libssl-dev
+
       - name: Install dependencies
         run: |
           composer require "illuminate/console:${{ matrix.laravel }}" "illuminate/database:${{ matrix.laravel }}" "illuminate/filesystem:${{ matrix.laravel }}" --no-update
