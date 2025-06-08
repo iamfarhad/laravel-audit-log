@@ -11,5 +11,8 @@ tools:
 before_commands:
     - sudo apt-get update
     - sudo apt-get install -y openssl libssl-dev pkg-config
+    - find /usr -name 'openssl.pc'
+    - pkg-config --modversion openssl
+    - openssl version
     - export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
     - export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
