@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
-use Illuminate\Support\Facades\Auth;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use Illuminate\Support\Facades\Auth;
 
 final class CauserResolver implements CauserResolverInterface
 {

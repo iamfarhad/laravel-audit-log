@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog;
 
-use Illuminate\Support\ServiceProvider;
-use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
-use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
-use iamfarhad\LaravelAuditLog\Services\AuditLogger;
-use iamfarhad\LaravelAuditLog\Services\CauserResolver;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
+use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Services\CauserResolver;
+use Illuminate\Support\ServiceProvider;
 
 final class AuditLoggerServiceProvider extends ServiceProvider
 {

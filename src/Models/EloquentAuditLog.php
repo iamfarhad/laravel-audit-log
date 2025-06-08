@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Models;
 
-use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 final class EloquentAuditLog extends Model
 {

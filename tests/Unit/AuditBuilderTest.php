@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Mockery;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
-use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Mockery;
 
 final class AuditBuilderTest extends TestCase
 {

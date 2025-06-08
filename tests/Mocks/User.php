@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Mocks;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Contracts\Auth\Authenticatable;
 use iamfarhad\LaravelAuditLog\Traits\Auditable;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 
 final class User extends Model implements Authenticatable
 {

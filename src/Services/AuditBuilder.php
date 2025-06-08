@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Database\Eloquent\Model;
-use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * A fluent builder for creating custom audit logs for a model.

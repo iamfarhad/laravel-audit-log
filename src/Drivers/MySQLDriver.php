@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Drivers;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
-use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 final class MySQLDriver implements AuditDriverInterface
 {

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 final class EloquentAuditLogTest extends TestCase
 {

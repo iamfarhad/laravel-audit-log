@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Mockery;
-use Illuminate\Support\Facades\Auth;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
-use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
 use iamfarhad\LaravelAuditLog\Services\CauserResolver;
+use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Support\Facades\Auth;
+use Mockery;
 
 final class CauserResolverTest extends TestCase
 {

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Request;
-use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class AuditLogger
 {

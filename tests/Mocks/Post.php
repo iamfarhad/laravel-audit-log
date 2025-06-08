@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Mocks;
 
-use Illuminate\Database\Eloquent\Model;
 use iamfarhad\LaravelAuditLog\Traits\Auditable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class Post extends Model

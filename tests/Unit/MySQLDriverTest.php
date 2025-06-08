@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Mockery;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
-use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use Mockery;
 
 final class MySQLDriverTest extends TestCase
 {

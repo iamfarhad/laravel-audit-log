@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Feature;
 
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\Post;
 use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
-use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 final class AuditLogBatchTest extends TestCase
 {

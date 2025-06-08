@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Traits;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Model;
-use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
-use iamfarhad\LaravelAuditLog\Services\AuditLogger;
-use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
-use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Trait that implements the AuditableInterface to make models auditable.

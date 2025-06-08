@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\DTOs;
 
 use DateTimeInterface;
-use Illuminate\Support\Carbon;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use Illuminate\Support\Carbon;
 
 final class AuditLog implements AuditLogInterface
 {
