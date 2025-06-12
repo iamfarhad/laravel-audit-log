@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog;
 
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
@@ -20,16 +21,24 @@ final class AuditLoggerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/audit-logger.php',
+            __DIR__ . '/../config/audit-logger.php',
             'audit-logger'
         );
 
         $this->app->bind(AuditLogInterface::class, AuditLog::class);
 
+        // Register the audit driver interface
+        $this->app->bind(AuditDriverInterface::class, function ($app) {
+            return match ($app['config']['audit-logger.default']) {
+                'mysql' => new MySQLDriver,
+                default => new MySQLDriver,
+            };
+        });
+
         // Register the causer resolver
         $this->app->singleton(
             CauserResolverInterface::class,
-            fn ($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
+            fn($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
                 ? $app->make($app['config']['audit-logger.causer']['resolver'])
                 : new CauserResolver(
                     guard: $app['config']['audit-logger.causer']['guard'] ?? null,
@@ -37,8 +46,8 @@ final class AuditLoggerServiceProvider extends ServiceProvider
                 )
         );
 
-        // Register the main audit logger service
-        $this->app->singleton(AuditLogger::class, function ($app) {
+        // Register the main audit logger service - use fully qualified namespace
+        $this->app->singleton(\iamfarhad\LaravelAuditLog\Services\AuditLogger::class, function ($app) {
             $driver = match ($app['config']['audit-logger.default']) {
                 'mysql' => new MySQLDriver,
                 default => new MySQLDriver,
@@ -46,6 +55,9 @@ final class AuditLoggerServiceProvider extends ServiceProvider
 
             return new AuditLogger($driver);
         });
+
+        // Register facade accessor - use fully qualified namespace
+        $this->app->bind('audit-logger', \iamfarhad\LaravelAuditLog\Services\AuditLogger::class);
     }
 
     /**
@@ -56,7 +68,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Publish config
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/audit-logger.php' => config_path('audit-logger.php'),
+                __DIR__ . '/../config/audit-logger.php' => config_path('audit-logger.php'),
             ], 'audit-logger-config');
         }
 

@@ -11,7 +11,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\App;
 
 final class ProcessAuditLogJob implements ShouldQueue
 {
@@ -25,11 +24,18 @@ final class ProcessAuditLogJob implements ShouldQueue
      */
     public function __construct(
         public AuditLogInterface $log,
-        protected ?string $driverName = null
+        protected AuditDriverInterface $driver
     ) {
-        $this->driverName = $driverName ?? config('audit-logger.default');
-        $this->onQueue(config('audit-logger.queue.queue_name', 'default'));
-        $this->onConnection(config('audit-logger.queue.connection', config('queue.default')));
+
+        // Configure queue settings
+        $this->onQueue(config('audit-logger.queue.queue_name', 'audit'));
+        $this->onConnection(config('audit-logger.queue.connection', null));
+
+        // Set delay if configured
+        $delay = config('audit-logger.queue.delay', 0);
+        if ($delay > 0) {
+            $this->delay($delay);
+        }
     }
 
     /**
@@ -37,10 +43,7 @@ final class ProcessAuditLogJob implements ShouldQueue
      */
     public function handle(): void
     {
-        // Resolve the driver from the container
-        $driver = App::make(AuditDriverInterface::class);
-
         // Store the log
-        $driver->store($this->log);
+        $this->driver->store($this->log);
     }
 }

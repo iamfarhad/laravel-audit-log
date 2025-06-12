@@ -34,6 +34,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Queue Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure whether audit logs should be processed asynchronously using
+    | Laravel's queue system. When enabled, audit logs will be dispatched
+    | to the specified queue for background processing.
+    |
+    */
+    'queue' => [
+        'enabled' => env('AUDIT_QUEUE_ENABLED', false),
+        'connection' => env('AUDIT_QUEUE_CONNECTION', config('queue.default')),
+        'queue_name' => env('AUDIT_QUEUE_NAME', 'audit'),
+        'delay' => env('AUDIT_QUEUE_DELAY', 0),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Auto Migration
     |--------------------------------------------------------------------------
     |

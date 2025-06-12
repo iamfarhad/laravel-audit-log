@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-06-07
+
+### Added
+- PHP 8.4 support: Leveraged new language features and improved compatibility
+- `readonly` properties for DTOs and Value Objects to promote immutability
+- Enhanced DTOs with stricter typing and property visibility
+- New configuration options for advanced field management and causer resolution
+- Improved batch processing for high-volume audit logging
+- Additional query scopes for more granular audit log filtering
+- More comprehensive test coverage for new features and edge cases
+
+### Changed
+- All service classes are now `final` by default for better composition and code safety
+- Refactored service and repository classes to use dependency injection exclusively
+- Improved PSR-12 code style enforcement and static analysis integration
+- Updated documentation to reflect new PHP 8.4 and Laravel 12.x best practices
+- Enhanced performance for audit log writes and queries
+- Updated default configuration for better security and compliance
+
+### Fixed
+- Resolved edge case bugs in source tracking for queued jobs and HTTP requests
+- Fixed issues with field exclusion logic in global and model-specific settings
+- Improved error handling and exception messages for misconfiguration
+- Addressed minor bugs reported by the community
+
+### Documentation
+- Updated README with PHP 8.4 and Laravel 12.x usage examples
+- Added migration and upgrade guide for 1.4.0
+- Expanded troubleshooting and security best practices sections
+
 ## [Unreleased]
 
 ### Added

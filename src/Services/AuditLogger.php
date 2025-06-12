@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Services;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
+
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Request;
+use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
+use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogJob;
+use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogSyncJob;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 
 final class AuditLogger
 {
@@ -16,7 +19,11 @@ final class AuditLogger
 
     public function log(AuditLogInterface $log): void
     {
-        $this->driver->store($log);
+        if (config('audit-logger.queue.enabled', false)) {
+            ProcessAuditLogJob::dispatch($log, $this->driver);
+        } else {
+            ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
+        }
     }
 
     /**
@@ -26,7 +33,15 @@ final class AuditLogger
      */
     public function batch(array $logs): void
     {
-        $this->driver->storeBatch($logs);
+        if (config('audit-logger.queue.enabled', false)) {
+            foreach ($logs as $log) {
+                ProcessAuditLogJob::dispatch($log, $this->driver);
+            }
+        } else {
+            foreach ($logs as $log) {
+                ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
+            }
+        }
     }
 
     public static function getDriver(string $driverName): static
