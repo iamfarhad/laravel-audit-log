@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Mockery;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogSyncJob;
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Mockery;
 
 final class ProcessAuditLogSyncJobTest extends TestCase
 {

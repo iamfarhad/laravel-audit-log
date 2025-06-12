@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
-use Mockery;
-use Illuminate\Support\Facades\Queue;
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
-use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogJob;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogSyncJob;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Support\Facades\Queue;
+use Mockery;
 
 final class AuditLoggerServiceTest extends TestCase
 {

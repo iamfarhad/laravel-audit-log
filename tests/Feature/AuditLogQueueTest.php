@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Feature;
 
-use iamfarhad\LaravelAuditLog\Tests\TestCase;
-use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
-use Illuminate\Support\Facades\Queue;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogJob;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogSyncJob;
+use iamfarhad\LaravelAuditLog\Tests\Mocks\User;
+use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Support\Facades\Queue;
 
 final class AuditLogQueueTest extends TestCase
 {
@@ -23,7 +23,7 @@ final class AuditLogQueueTest extends TestCase
         // Arrange
         config(['audit-logger.queue.enabled' => false]);
 
-        $user = new User();
+        $user = new User;
         $user->name = 'John Doe';
         $user->email = 'john@example.com';
         $user->password = 'password';
@@ -40,7 +40,7 @@ final class AuditLogQueueTest extends TestCase
         // Arrange
         config(['audit-logger.queue.enabled' => true]);
 
-        $user = new User();
+        $user = new User;
         $user->name = 'John Doe';
         $user->email = 'john@example.com';
         $user->password = 'password';
@@ -65,7 +65,7 @@ final class AuditLogQueueTest extends TestCase
             'audit-logger.queue.connection' => 'redis',
         ]);
 
-        $user = new User();
+        $user = new User;
         $user->name = 'John Doe';
         $user->email = 'john@example.com';
         $user->password = 'password';
@@ -110,7 +110,7 @@ final class AuditLogQueueTest extends TestCase
         // Arrange
         config(['audit-logger.queue.enabled' => true]);
 
-        $user = new User();
+        $user = new User;
         $user->name = 'John Doe';
         $user->email = 'john@example.com';
         $user->password = 'password';
@@ -126,6 +126,7 @@ final class AuditLogQueueTest extends TestCase
         // Assert
         Queue::assertPushed(ProcessAuditLogJob::class, function ($job) {
             $newValues = $job->log->getNewValues();
+
             return $job->log->getAction() === 'updated'
                 && $job->log->getEntityType() === User::class
                 && isset($newValues['name'])
@@ -138,7 +139,7 @@ final class AuditLogQueueTest extends TestCase
         // Arrange
         config(['audit-logger.queue.enabled' => true]);
 
-        $user = new User();
+        $user = new User;
         $user->name = 'John Doe';
         $user->email = 'john@example.com';
         $user->password = 'password';
@@ -165,7 +166,7 @@ final class AuditLogQueueTest extends TestCase
         // Use real queue for this test to ensure sync execution
         Queue::fake(false);
 
-        $user = new User();
+        $user = new User;
         $user->name = 'John Doe';
         $user->email = 'john@example.com';
         $user->password = 'password';

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Jobs;
 
-use Illuminate\Foundation\Bus\Dispatchable;
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use Illuminate\Foundation\Bus\Dispatchable;
 
 final class ProcessAuditLogSyncJob
 {
@@ -18,8 +18,7 @@ final class ProcessAuditLogSyncJob
     public function __construct(
         public AuditLogInterface $log,
         protected AuditDriverInterface $driver
-    ) {
-    }
+    ) {}
 
     /**
      * Execute the job synchronously.

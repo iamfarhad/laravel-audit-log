@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
@@ -21,7 +21,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/audit-logger.php',
+            __DIR__.'/../config/audit-logger.php',
             'audit-logger'
         );
 
@@ -38,7 +38,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Register the causer resolver
         $this->app->singleton(
             CauserResolverInterface::class,
-            fn($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
+            fn ($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
                 ? $app->make($app['config']['audit-logger.causer']['resolver'])
                 : new CauserResolver(
                     guard: $app['config']['audit-logger.causer']['guard'] ?? null,
@@ -68,7 +68,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Publish config
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/audit-logger.php' => config_path('audit-logger.php'),
+                __DIR__.'/../config/audit-logger.php' => config_path('audit-logger.php'),
             ], 'audit-logger-config');
         }
 
