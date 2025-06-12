@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog;
 
-use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
