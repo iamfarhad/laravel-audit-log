@@ -56,6 +56,7 @@ final class MySQLDriver implements AuditDriverInterface
     {
         // Skip validation in testing environment to allow fake class names
         if (app()->environment('testing')) {
+
             return;
         }
 
@@ -73,6 +74,7 @@ final class MySQLDriver implements AuditDriverInterface
 
         try {
             $model = EloquentAuditLog::forEntity(entityClass: $log->getEntityType());
+            $model->setConnection(config('audit-logger.default'));
             $model->fill([
                 'entity_id' => $log->getEntityId(),
                 'action' => $log->getAction(),
@@ -116,6 +118,7 @@ final class MySQLDriver implements AuditDriverInterface
             // Use Eloquent models to leverage automatic JSON casting
             foreach ($entityLogs as $log) {
                 $model = EloquentAuditLog::forEntity(entityClass: $entityType);
+                $model->setConnection(config('audit-logger.default'));
                 $model->fill([
                     'entity_id' => $log->getEntityId(),
                     'action' => $log->getAction(),
@@ -137,7 +140,7 @@ final class MySQLDriver implements AuditDriverInterface
         $this->validateEntityType($entityClass);
         $tableName = $this->getTableName($entityClass);
 
-        Schema::create($tableName, function (Blueprint $table) {
+        Schema::connection(config('audit-logger.default'))->create($tableName, function (Blueprint $table) {
             $table->id();
             $table->string('entity_id');
             $table->string('action');
@@ -176,7 +179,7 @@ final class MySQLDriver implements AuditDriverInterface
         }
 
         // Check database and cache the result
-        $exists = Schema::hasTable($tableName);
+        $exists = Schema::connection(config('audit-logger.default'))->hasTable($tableName);
         self::$existingTables[$tableName] = $exists;
 
         return $exists;
