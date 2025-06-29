@@ -153,12 +153,14 @@ final class MySQLDriver implements AuditDriverInterface
             $table->json('metadata')->nullable();
             $table->timestamp('created_at');
             $table->string('source')->nullable();
+            $table->timestamp('anonymized_at')->nullable();
 
             // Basic indexes
             $table->index('entity_id');
             $table->index('causer_id');
             $table->index('created_at');
             $table->index('action');
+            $table->index('anonymized_at');
 
             // Composite indexes for common query patterns
             $table->index(['entity_id', 'action']);

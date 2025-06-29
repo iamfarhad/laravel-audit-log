@@ -211,4 +211,63 @@ trait Auditable
     {
         return new AuditBuilder($this);
     }
+
+    /**
+     * Get the retention configuration for this model.
+     * Models can override this to provide custom retention settings.
+     */
+    public function getAuditRetentionConfig(): array
+    {
+        if (property_exists($this, 'auditRetention') && is_array($this->auditRetention)) {
+            return $this->auditRetention;
+        }
+
+        return [];
+    }
+
+    /**
+     * Check if retention is enabled for this model.
+     */
+    public function isRetentionEnabled(): bool
+    {
+        $config = $this->getAuditRetentionConfig();
+
+        // Check model-specific setting first
+        if (isset($config['enabled'])) {
+            return (bool) $config['enabled'];
+        }
+
+        // Fall back to global setting
+        return config('audit-logger.retention.enabled', false);
+    }
+
+    /**
+     * Get the retention strategy for this model.
+     */
+    public function getRetentionStrategy(): string
+    {
+        $config = $this->getAuditRetentionConfig();
+
+        return $config['strategy'] ?? config('audit-logger.retention.strategy', 'delete');
+    }
+
+    /**
+     * Get the retention days for this model.
+     */
+    public function getRetentionDays(): int
+    {
+        $config = $this->getAuditRetentionConfig();
+
+        return $config['days'] ?? config('audit-logger.retention.days', 365);
+    }
+
+    /**
+     * Get the anonymization days for this model.
+     */
+    public function getAnonymizeDays(): int
+    {
+        $config = $this->getAuditRetentionConfig();
+
+        return $config['anonymize_after_days'] ?? config('audit-logger.retention.anonymize_after_days', 180);
+    }
 }

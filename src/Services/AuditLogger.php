@@ -18,7 +18,7 @@ final class AuditLogger
 
     public function log(AuditLogInterface $log): void
     {
-        if (config('audit-logger.queue.enabled', false)) {
+        if ((bool) config('audit-logger.queue.enabled', false)) {
             ProcessAuditLogJob::dispatch($log, $this->driver);
         } else {
             ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
@@ -32,7 +32,7 @@ final class AuditLogger
      */
     public function batch(array $logs): void
     {
-        if (config('audit-logger.queue.enabled', false)) {
+        if ((bool) config('audit-logger.queue.enabled', false)) {
             foreach ($logs as $log) {
                 ProcessAuditLogJob::dispatch($log, $this->driver);
             }

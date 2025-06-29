@@ -35,6 +35,7 @@ The package uses a high-performance direct logging architecture with optional qu
 - [Performance Optimization](#performance-optimization)
 - [Testing](#testing)
 - [Security Best Practices](#security-best-practices)
+- [Audit Log Retention](#audit-log-retention)
 - [Migration & Upgrade Guide](#migration--upgrade-guide)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -54,6 +55,7 @@ The package uses a high-performance direct logging architecture with optional qu
 - **Enhanced Query Scopes**: Comprehensive filtering capabilities with dedicated scopes for different query patterns.
 - **Extensible Drivers**: Supports multiple storage drivers (currently MySQL) with the ability to implement custom drivers.
 - **Automatic Migration**: Seamlessly creates audit tables for new models when enabled.
+- **Smart Retention System**: Comprehensive retention policies with delete, anonymize, and archive strategies for compliance and performance.
 - **Static Analysis**: Level 5 PHPStan compliance for maximum code quality and reliability.
 
 ## Requirements
@@ -137,6 +139,17 @@ return [
         'resolver' => null, // custom resolver class
     ],
 
+    // Retention configuration for automatic cleanup
+    'retention' => [
+        'enabled' => env('AUDIT_RETENTION_ENABLED', false),
+        'days' => env('AUDIT_RETENTION_DAYS', 365),
+        'strategy' => env('AUDIT_RETENTION_STRATEGY', 'delete'), // 'delete', 'archive', 'anonymize'
+        'batch_size' => env('AUDIT_RETENTION_BATCH_SIZE', 1000),
+        'anonymize_after_days' => env('AUDIT_ANONYMIZE_DAYS', 180),
+        'archive_connection' => env('AUDIT_ARCHIVE_CONNECTION', null),
+        'run_cleanup_automatically' => env('AUDIT_AUTO_CLEANUP', false),
+    ],
+
     // Registered entities for centralized configuration
     'entities' => [
         // Example entity configuration:
@@ -144,6 +157,11 @@ return [
         //     'table' => 'users',
         //     'exclude' => ['password'],
         //     'include' => ['*'],
+        //     'retention' => [
+        //         'days' => 730,
+        //         'strategy' => 'anonymize',
+        //         'anonymize_after_days' => 365,
+        //     ],
         // ],
     ],
 ];
@@ -168,6 +186,15 @@ AUDIT_QUEUE_DELAY=0
 
 # Migration Configuration
 AUDIT_AUTO_MIGRATION=true
+
+# Retention Configuration
+AUDIT_RETENTION_ENABLED=false
+AUDIT_RETENTION_DAYS=365
+AUDIT_RETENTION_STRATEGY=delete
+AUDIT_RETENTION_BATCH_SIZE=1000
+AUDIT_ANONYMIZE_DAYS=180
+AUDIT_ARCHIVE_CONNECTION=null
+AUDIT_AUTO_CLEANUP=false
 ```
 
 ### Database Schema
@@ -186,12 +213,14 @@ CREATE TABLE audit_{model_name}_logs (
     metadata JSON NULL,
     source VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL,
+    anonymized_at TIMESTAMP NULL,
     
     INDEX idx_entity_id (entity_id),
     INDEX idx_causer (causer_type, causer_id),
     INDEX idx_created_at (created_at),
     INDEX idx_source (source),
-    INDEX idx_action (action)
+    INDEX idx_action (action),
+    INDEX idx_anonymized_at (anonymized_at)
 );
 ```
 
@@ -896,6 +925,252 @@ final class AuditLogPolicy
     }
 }
 ```
+
+## Audit Log Retention
+
+The Laravel Audit Logger package includes a powerful retention system that helps you manage the lifecycle of your audit logs. This system supports automatic cleanup, anonymization, and archiving of old audit data to help with compliance requirements and database performance.
+
+### Features
+
+- **Multiple Retention Strategies**: Delete, anonymize, or archive old audit logs
+- **Per-Model Configuration**: Override global settings for specific models
+- **Batch Processing**: Efficient processing of large datasets
+- **Smart Anonymization**: Automatically detect and anonymize sensitive fields
+- **Flexible Scheduling**: Run manually or via scheduled jobs
+- **Dry Run Mode**: Preview changes before execution
+
+### Configuration
+
+#### Global Configuration
+
+Configure retention settings in your `config/audit-logger.php`:
+
+```php
+'retention' => [
+    'enabled' => env('AUDIT_RETENTION_ENABLED', false),
+    'days' => env('AUDIT_RETENTION_DAYS', 365),
+    'strategy' => env('AUDIT_RETENTION_STRATEGY', 'delete'), // 'delete', 'archive', 'anonymize'
+    'batch_size' => env('AUDIT_RETENTION_BATCH_SIZE', 1000),
+    'anonymize_after_days' => env('AUDIT_ANONYMIZE_DAYS', 180),
+    'archive_connection' => env('AUDIT_ARCHIVE_CONNECTION', null),
+    'run_cleanup_automatically' => env('AUDIT_AUTO_CLEANUP', false),
+],
+```
+
+#### Environment Variables
+
+```env
+AUDIT_RETENTION_ENABLED=true
+AUDIT_RETENTION_DAYS=365
+AUDIT_RETENTION_STRATEGY=delete
+AUDIT_RETENTION_BATCH_SIZE=1000
+AUDIT_ANONYMIZE_DAYS=180
+AUDIT_ARCHIVE_CONNECTION=archive_db
+AUDIT_AUTO_CLEANUP=false
+```
+
+#### Per-Entity Configuration
+
+Configure retention settings for specific entities:
+
+```php
+'entities' => [
+    \App\Models\User::class => [
+        'table' => 'users',
+        'retention' => [
+            'enabled' => true,
+            'days' => 730, // Keep for 2 years
+            'strategy' => 'anonymize',
+            'anonymize_after_days' => 365, // Anonymize after 1 year
+        ],
+    ],
+    \App\Models\Order::class => [
+        'table' => 'orders',
+        'retention' => [
+            'days' => 2555, // Keep for 7 years (compliance)
+            'strategy' => 'archive',
+        ],
+    ],
+],
+```
+
+#### Per-Model Configuration
+
+Configure retention directly in your model:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Traits\Auditable;
+
+final class User extends Model
+{
+    use Auditable;
+
+    // Per-model retention configuration
+    protected array $auditRetention = [
+        'enabled' => true,
+        'days' => 730,
+        'strategy' => 'anonymize',
+        'anonymize_after_days' => 365,
+    ];
+}
+```
+
+### Retention Strategies
+
+#### 1. Delete Strategy
+
+Permanently removes old audit logs from the database.
+
+```php
+'strategy' => 'delete',
+'days' => 365, // Delete records older than 1 year
+```
+
+**Use Case**: When you want to minimize storage usage and don't need historical data beyond a certain period.
+
+#### 2. Anonymize Strategy
+
+Replaces sensitive information with anonymized values while keeping the audit structure intact.
+
+```php
+'strategy' => 'anonymize',
+'days' => 180, // Anonymize records older than 6 months
+```
+
+**Anonymized Fields**: email, phone, address, ip_address, user_agent, name, first_name, last_name, full_name
+
+**Use Case**: Compliance requirements where you need to maintain audit trail structure but remove personally identifiable information.
+
+#### 3. Archive Strategy
+
+Moves old audit logs to a separate database connection for long-term storage.
+
+```php
+'strategy' => 'archive',
+'days' => 365, // Archive records older than 1 year
+'archive_connection' => 'archive_db',
+```
+
+**Use Case**: Long-term compliance requirements where you need to maintain historical data but keep the primary database lean.
+
+#### 4. Combined Strategy
+
+You can combine anonymization with deletion or archiving:
+
+```php
+'strategy' => 'delete', // or 'archive'
+'days' => 730, // Final action after 2 years
+'anonymize_after_days' => 365, // Anonymize after 1 year
+```
+
+### Usage
+
+#### Manual Execution
+
+```bash
+# Run cleanup for all entities
+php artisan audit:cleanup --force
+
+# Run cleanup for specific entity
+php artisan audit:cleanup --entity="App\Models\User" --force
+
+# Dry run to see what would be processed
+php artisan audit:cleanup --dry-run
+
+# Process specific number of records
+php artisan audit:cleanup --limit=1000 --force
+```
+
+#### Queue Processing
+
+```php
+use iamfarhad\LaravelAuditLog\Jobs\RetentionCleanupJob;
+
+// Dispatch cleanup job for all entities
+RetentionCleanupJob::dispatch();
+
+// Dispatch cleanup job for specific entity  
+RetentionCleanupJob::dispatch('App\Models\User');
+```
+
+#### Scheduled Execution
+
+Add to your `app/Console/Kernel.php`:
+
+```php
+protected function schedule(Schedule $schedule): void
+{
+    // Run retention cleanup weekly
+    $schedule->command('audit:cleanup --force')
+        ->weekly()
+        ->environments(['production']);
+    
+    // Or run for specific entities
+    $schedule->command('audit:cleanup --entity="App\Models\User" --force')
+        ->daily()
+        ->at('02:00');
+}
+```
+
+#### Service Usage
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use iamfarhad\LaravelAuditLog\Contracts\RetentionServiceInterface;
+use iamfarhad\LaravelAuditLog\DTOs\RetentionConfig;
+
+final class AuditMaintenanceService
+{
+    public function __construct(
+        private readonly RetentionServiceInterface $retentionService
+    ) {}
+
+    public function cleanupUserAudits(): void
+    {
+        $config = new RetentionConfig(
+            enabled: true,
+            days: 365,
+            strategy: 'anonymize',
+            batchSize: 1000,
+            anonymizeAfterDays: 180
+        );
+
+        $result = $this->retentionService->processRetention(
+            entityClass: 'App\Models\User',
+            config: $config,
+            dryRun: false
+        );
+
+        // Handle results...
+    }
+}
+```
+
+### Best Practices
+
+1. **Start with Dry Runs**: Always test your retention policies with `--dry-run` before applying
+2. **Monitor Performance**: Use appropriate batch sizes for your database performance
+3. **Backup Strategy**: Ensure you have backups before running retention operations
+4. **Compliance Review**: Review your retention policies with legal/compliance teams
+5. **Gradual Implementation**: Start with longer retention periods and adjust based on requirements
+6. **Queue Processing**: Use queued processing for large datasets to avoid timeouts
+
+### Security Considerations
+
+- **Access Control**: Ensure only authorized users can execute retention commands
+- **Audit the Audit**: Consider logging retention operations themselves
+- **Data Recovery**: Have procedures for data recovery in case of mistakes
+- **Anonymization Verification**: Test that anonymized data meets your privacy requirements
 
 ## Migration & Upgrade Guide
 

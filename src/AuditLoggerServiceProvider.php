@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog;
 
+use iamfarhad\LaravelAuditLog\Console\Commands\CleanupAuditLogsCommand;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use iamfarhad\LaravelAuditLog\Contracts\RetentionServiceInterface;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Services\CauserResolver;
+use iamfarhad\LaravelAuditLog\Services\RetentionService;
 use Illuminate\Support\ServiceProvider;
 
 final class AuditLoggerServiceProvider extends ServiceProvider
@@ -48,6 +51,9 @@ final class AuditLoggerServiceProvider extends ServiceProvider
 
             return new AuditLogger($driver);
         });
+
+        // Register the retention service
+        $this->app->singleton(RetentionServiceInterface::class, RetentionService::class);
     }
 
     /**
@@ -60,6 +66,11 @@ final class AuditLoggerServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/audit-logger.php' => config_path('audit-logger.php'),
             ], 'audit-logger-config');
+
+            // Register commands
+            $this->commands([
+                CleanupAuditLogsCommand::class,
+            ]);
         }
 
         // Event listeners removed - using direct logging approach

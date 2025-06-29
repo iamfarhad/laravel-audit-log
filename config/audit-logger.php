@@ -108,10 +108,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Retention Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure automatic cleanup and retention policies for audit logs.
+    | You can set global defaults and override them per entity.
+    |
+    */
+    'retention' => [
+        'enabled' => env('AUDIT_RETENTION_ENABLED', false),
+        'days' => env('AUDIT_RETENTION_DAYS', 365),
+        'strategy' => env('AUDIT_RETENTION_STRATEGY', 'delete'), // 'delete', 'archive', 'anonymize'
+        'batch_size' => env('AUDIT_RETENTION_BATCH_SIZE', 1000),
+        'anonymize_after_days' => env('AUDIT_ANONYMIZE_DAYS', 180),
+        'archive_connection' => env('AUDIT_ARCHIVE_CONNECTION', null),
+        'run_cleanup_automatically' => env('AUDIT_AUTO_CLEANUP', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Registered Entities
     |--------------------------------------------------------------------------
     |
-    | List of entities that should be audited.
+    | List of entities that should be audited. You can override retention
+    | settings per entity by adding a 'retention' key.
     |
     */
     'entities' => [
@@ -120,6 +140,11 @@ return [
         //     'table' => 'users',
         //     'exclude' => ['password'],
         //     'include' => ['*'],
+        //     'retention' => [
+        //         'days' => 730,
+        //         'strategy' => 'anonymize',
+        //         'anonymize_after_days' => 365,
+        //     ],
         // ],
     ],
 ];

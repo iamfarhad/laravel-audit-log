@@ -19,9 +19,6 @@ final class ProcessAuditLogJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    /**
-     * @param  string|null  $driverName  The name of the driver to use (default is the configured default)
-     */
     public function __construct(
         public AuditLogInterface $log,
         protected AuditDriverInterface $driver
