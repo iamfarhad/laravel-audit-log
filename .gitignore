@@ -13,3 +13,4 @@ Thumbs.db
 *.swo
 *~
 composer.lock 
+b2b-field.code-workspace
