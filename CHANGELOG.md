@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-01-15
+
+### Added
+- Smart Retention System
+- Flexible Retention Configuration  
+- Artisan Command for Cleanup
+- Queue-Based Processing
+- Smart Data Anonymization
+- Enhanced Database Schema
+- Comprehensive Test Coverage
+
+### Changed
+- PHPUnit 11/12 Compatibility
+- Enhanced Documentation
+- Updated Configuration
+
+### Fixed
+- PHP 8.1 Compatibility
+- PHPStan Level 5 Compliance
+- PSR-12 Code Style
+- Documentation Accuracy
+
+### Security
+- Access Control
+- Data Recovery
+- Audit Trail
+- Anonymization Verification
+
+### Performance
+- Batch Processing
+- Database Optimization
+- Queue Support
+- Connection Pooling
+
 ## [1.4.1] - 2025-06-29
 
 ### Added
