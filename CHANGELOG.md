@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2025-06-29
+
+### Added
+- Database connection support for flexible audit storage
+- Connection configuration option in `audit-logger.drivers.mysql.connection`
+- Enhanced `MySQLDriver` constructor to accept optional connection parameter
+- `getConnectionName()` method in `EloquentAuditLog` model for connection retrieval
+- Connection parameter support in `AuditLogger::getDriver()` static method
+- Comprehensive connection testing with 3 new test cases
+- Automatic connection setting for Eloquent models in audit operations
+
+### Changed
+- **Enhanced**: `MySQLDriver` now respects configured database connections for all operations
+- **Enhanced**: `EloquentAuditLog::forEntity()` automatically sets connection from configuration
+- **Enhanced**: All Schema operations now use the specified connection
+- **Enhanced**: Service provider registration includes connection configuration
+- **Enhanced**: Audit models automatically use configured connection for storage and retrieval
+- **Backward Compatible**: Existing code continues to work without changes
+
+### Fixed
+- Connection handling in all database operations (Schema creation, model operations)
+- Proper connection fallback to default database when no specific connection configured
+- Test database operations now use correct connections for isolation
+
+### Documentation
+- Added connection configuration examples and usage patterns
+- Enhanced README with multi-connection setup instructions
+- Updated test documentation for connection-specific scenarios
+
 ## [1.4.0] - 2025-06-07
 
 ### Added
@@ -184,7 +213,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Query scopes for efficient log retrieval
 - Batch operations for performance optimization
 
-[Unreleased]: https://github.com/iamfarhad/laravel-audit-log/compare/1.3.1...HEAD
+[Unreleased]: https://github.com/iamfarhad/laravel-audit-log/compare/1.4.1...HEAD
+[1.4.1]: https://github.com/iamfarhad/laravel-audit-log/compare/1.4.0...1.4.1
+[1.4.0]: https://github.com/iamfarhad/laravel-audit-log/compare/1.3.1...1.4.0
 [1.3.1]: https://github.com/iamfarhad/laravel-audit-log/compare/1.3.0...1.3.1
 [1.3.0]: https://github.com/iamfarhad/laravel-audit-log/compare/1.2.1...1.3.0
 [1.2.1]: https://github.com/iamfarhad/laravel-audit-log/compare/1.2.0...1.2.1
