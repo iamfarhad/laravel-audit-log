@@ -55,7 +55,7 @@ abstract class TestCase extends Orchestra
     protected function setUpDatabase(): void
     {
         // Create users table
-        Schema::create('users', function (Blueprint $table) {
+        Schema::connection('testbench')->create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
@@ -67,7 +67,7 @@ abstract class TestCase extends Orchestra
         });
 
         // Create posts table
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::connection('testbench')->create('posts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
@@ -84,7 +84,7 @@ abstract class TestCase extends Orchestra
         ];
 
         foreach ($auditTables as $tableName) {
-            Schema::create($tableName, function (Blueprint $table) {
+            Schema::connection('testbench')->create($tableName, function (Blueprint $table) {
                 $table->id();
                 $table->string('entity_id');
                 $table->string('action');

@@ -18,7 +18,7 @@ final class MySQLDriverTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->driver = new MySQLDriver;
+        $this->driver = new MySQLDriver('testbench');
     }
 
     public function test_can_store_audit_log(): void
@@ -98,13 +98,13 @@ final class MySQLDriverTest extends TestCase
     public function test_can_create_storage_for_entity(): void
     {
         // Drop the table if it exists
-        Schema::dropIfExists('audit_products_logs');
+        Schema::connection('testbench')->dropIfExists('audit_products_logs');
 
         // Create storage for a new entity
         $this->driver->createStorageForEntity('App\\Models\\Product');
 
         // Verify the table was created
-        $this->assertTrue(Schema::hasTable('audit_products_logs'));
+        $this->assertTrue(Schema::connection('testbench')->hasTable('audit_products_logs'));
 
         // Skip column checks entirely since they can vary between SQLite versions
         // This prevents the pragma_table_xinfo error in older SQLite versions
@@ -113,7 +113,7 @@ final class MySQLDriverTest extends TestCase
     public function test_storage_exists_for_entity(): void
     {
         // Should return false for a non-existent table
-        Schema::dropIfExists('audit_nonexistent_logs');
+        Schema::connection('testbench')->dropIfExists('audit_nonexistent_logs');
         $this->assertFalse($this->driver->storageExistsForEntity('App\\Models\\Nonexistent'));
 
         // Should return true for an existing table
@@ -123,7 +123,7 @@ final class MySQLDriverTest extends TestCase
     public function test_ensure_storage_exists_creates_table_if_needed(): void
     {
         // Drop the table if it exists
-        Schema::dropIfExists('audit_orders_logs');
+        Schema::connection('testbench')->dropIfExists('audit_orders_logs');
 
         // Enable auto migration
         config(['audit-logger.auto_migration' => true]);
@@ -132,13 +132,13 @@ final class MySQLDriverTest extends TestCase
         $this->driver->createStorageForEntity('App\\Models\\Order');
 
         // Verify the table exists
-        $this->assertTrue(Schema::hasTable('audit_orders_logs'));
+        $this->assertTrue(Schema::connection('testbench')->hasTable('audit_orders_logs'));
     }
 
     public function test_ensure_storage_exists_does_nothing_if_auto_migration_disabled(): void
     {
         // Drop the table if it exists
-        Schema::dropIfExists('audit_customers_logs');
+        Schema::connection('testbench')->dropIfExists('audit_customers_logs');
 
         // Disable auto migration
         config(['audit-logger.auto_migration' => false]);
@@ -147,7 +147,7 @@ final class MySQLDriverTest extends TestCase
         $this->driver->ensureStorageExists('App\\Models\\Customer');
 
         // Verify the table does not exist
-        $this->assertFalse(Schema::hasTable('audit_customers_logs'));
+        $this->assertFalse(Schema::connection('testbench')->hasTable('audit_customers_logs'));
     }
 
     protected function tearDown(): void

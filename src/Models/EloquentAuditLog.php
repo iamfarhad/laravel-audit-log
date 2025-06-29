@@ -46,6 +46,16 @@ final class EloquentAuditLog extends Model
         'metadata' => 'array',
     ];
 
+    /**
+     * Get the connection name for the model.
+     */
+    public function getConnectionName(): ?string
+    {
+        $config = self::getConfigCache();
+
+        return $config['drivers']['mysql']['connection'] ?? config('database.default');
+    }
+
     public function auditable()
     {
         return $this->morphTo();
@@ -173,6 +183,15 @@ final class EloquentAuditLog extends Model
 
         $table = "{$tablePrefix}{$tableName}{$tableSuffix}";
 
-        return (new self)->setTable($table);
+        $instance = new self;
+        $instance->setTable($table);
+
+        // Set the connection from config
+        $connection = $config['drivers']['mysql']['connection'] ?? config('database.default');
+        if ($connection) {
+            $instance->setConnection($connection);
+        }
+
+        return $instance;
     }
 }

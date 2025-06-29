@@ -43,10 +43,12 @@ final class AuditLogger
         }
     }
 
-    public static function getDriver(string $driverName): static
+    public static function getDriver(string $driverName, ?string $connection = null): static
     {
+        $connection = $connection ?? config('audit-logger.drivers.mysql.connection') ?? config('database.default');
+
         $driver = match ($driverName) {
-            'mysql' => new MySQLDriver,
+            'mysql' => new MySQLDriver($connection),
             default => throw new \InvalidArgumentException("Driver {$driverName} not found"),
         };
 

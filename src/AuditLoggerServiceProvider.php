@@ -20,7 +20,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/audit-logger.php',
+            __DIR__ . '/../config/audit-logger.php',
             'audit-logger'
         );
 
@@ -29,7 +29,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Register the causer resolver
         $this->app->singleton(
             CauserResolverInterface::class,
-            fn ($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
+            fn($app) => isset($app['config']['audit-logger.causer']['resolver']) && $app['config']['audit-logger.causer']['resolver']
                 ? $app->make($app['config']['audit-logger.causer']['resolver'])
                 : new CauserResolver(
                     guard: $app['config']['audit-logger.causer']['guard'] ?? null,
@@ -38,10 +38,12 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         );
 
         // Register the main audit logger service - use fully qualified namespace
-        $this->app->singleton(\iamfarhad\LaravelAuditLog\Services\AuditLogger::class, function ($app) {
+        $this->app->singleton(AuditLogger::class, function ($app) {
+            $connection = $app['config']['audit-logger.drivers.mysql.connection'] ?? config('database.default');
+
             $driver = match ($app['config']['audit-logger.default']) {
-                'mysql' => new MySQLDriver,
-                default => new MySQLDriver,
+                'mysql' => new MySQLDriver($connection),
+                default => new MySQLDriver($connection),
             };
 
             return new AuditLogger($driver);
@@ -56,7 +58,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
         // Publish config
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/audit-logger.php' => config_path('audit-logger.php'),
+                __DIR__ . '/../config/audit-logger.php' => config_path('audit-logger.php'),
             ], 'audit-logger-config');
         }
 
