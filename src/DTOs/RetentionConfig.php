@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\DTOs;
 
-final readonly class RetentionConfig
+final class RetentionConfig
 {
     public function __construct(
-        public bool $enabled,
-        public int $days,
-        public string $strategy,
-        public int $batchSize,
-        public int $anonymizeAfterDays,
-        public ?string $archiveConnection,
-        public string $entityType,
-        public string $tableName,
+        public readonly bool $enabled,
+        public readonly int $days,
+        public readonly string $strategy,
+        public readonly int $batchSize,
+        public readonly int $anonymizeAfterDays,
+        public readonly ?string $archiveConnection,
+        public readonly string $entityType,
+        public readonly string $tableName,
     ) {}
 
     public static function fromArray(array $config, string $entityType, string $tableName): self

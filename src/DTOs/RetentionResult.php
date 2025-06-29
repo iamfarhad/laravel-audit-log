@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\DTOs;
 
-final readonly class RetentionResult
+final class RetentionResult
 {
     /**
      * @param  array<string, int>  $entitiesProcessed  Array of entity => count processed
      * @param  array<string>  $errors  Array of error messages
      */
     public function __construct(
-        public int $totalProcessed,
-        public array $entitiesProcessed,
-        public array $errors,
-        public float $executionTime,
+        public readonly int $totalProcessed,
+        public readonly array $entitiesProcessed,
+        public readonly array $errors,
+        public readonly float $executionTime,
     ) {}
 
     public static function empty(): self
