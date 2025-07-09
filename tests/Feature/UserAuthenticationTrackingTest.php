@@ -38,7 +38,7 @@ final class UserAuthenticationTrackingTest extends TestCase
             {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return ['type' => null, 'id' => null];
                 }
 
@@ -90,7 +90,7 @@ final class UserAuthenticationTrackingTest extends TestCase
             {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return ['type' => null, 'id' => null];
                 }
 
@@ -188,7 +188,7 @@ final class UserAuthenticationTrackingTest extends TestCase
             {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return ['type' => null, 'id' => null];
                 }
 
@@ -254,7 +254,7 @@ final class UserAuthenticationTrackingTest extends TestCase
             {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return ['type' => null, 'id' => null];
                 }
 
@@ -303,7 +303,7 @@ final class UserAuthenticationTrackingTest extends TestCase
             {
                 $user = Auth::user();
 
-                if (!$user) {
+                if (! $user) {
                     return ['type' => null, 'id' => null];
                 }
 
