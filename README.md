@@ -256,6 +256,275 @@ final class Order extends Model
 
 Once the trait is added, any changes to the model (create, update, delete, restore) will be automatically logged to a dedicated audit table (e.g., `audit_orders_logs`).
 
+### Authenticated User Tracking
+
+The audit logger automatically tracks WHO made the change and WHERE it came from:
+
+```php
+// When a user makes a change via HTTP request
+Auth::loginUsingId(1);
+$order = Order::create([
+    'customer_id' => 123,
+    'total' => 99.99,
+    'status' => 'pending'
+]);
+
+// Audit log will contain:
+// - causer_type: "App\Models\User"
+// - causer_id: 1
+// - source: "App\Http\Controllers\OrderController@store"
+```
+
+### Retrieving Audit Logs with User Information
+
+You can easily retrieve audit logs with user information:
+
+```php
+// Get audit logs with causer information
+$auditLogs = Order::find(1)->auditLogs()
+    ->where('causer_type', 'App\Models\User')
+    ->where('causer_id', 1)
+    ->get();
+
+// Using the EloquentAuditLog model directly
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+
+$logs = EloquentAuditLog::forEntity(Order::class)
+    ->forCauser('App\Models\User')
+    ->forCauserId(1)
+    ->get();
+
+// Get logs from HTTP requests only
+$httpLogs = EloquentAuditLog::forEntity(Order::class)
+    ->fromHttp()
+    ->get();
+
+// Get logs from console commands only
+$consoleLogs = EloquentAuditLog::forEntity(Order::class)
+    ->fromConsole()
+    ->get();
+```
+
+### Advanced User Tracking Examples
+
+#### Example 1: Track User Changes in Controller
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use Illuminate\Http\Request;
+
+final class OrderController extends Controller
+{
+    public function update(Request $request, Order $order): JsonResponse
+    {
+        // User is already authenticated via middleware
+        // Audit log will automatically capture:
+        // - causer_type: "App\Models\User"
+        // - causer_id: Auth::id()
+        // - source: "App\Http\Controllers\OrderController@update"
+        
+        $order->update($request->validated());
+        
+        return response()->json(['success' => true]);
+    }
+}
+```
+
+#### Example 2: Track System Changes in Console Commands
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Console\Commands;
+
+use App\Models\Order;
+use Illuminate\Console\Command;
+
+final class ProcessOrdersCommand extends Command
+{
+    protected $signature = 'orders:process';
+    
+    public function handle(): void
+    {
+        // For console commands, causer_type and causer_id will be null
+        // But source will be: "orders:process"
+        
+        Order::where('status', 'pending')
+            ->each(function ($order) {
+                $order->update(['status' => 'processed']);
+            });
+    }
+}
+```
+
+#### Example 3: Custom Metadata with User Context
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use iamfarhad\LaravelAuditLog\Traits\Auditable;
+
+final class Order extends Model
+{
+    use Auditable;
+
+    protected $fillable = ['customer_id', 'total', 'status'];
+
+    /**
+     * Add user context to audit metadata
+     */
+    public function getAuditMetadata(): array
+    {
+        return [
+            'ip_address' => request()->ip() ?? 'unknown',
+            'user_agent' => request()->userAgent() ?? 'unknown',
+            'user_email' => auth()->user()?->email ?? 'system',
+            'session_id' => session()->getId() ?? null,
+            'request_id' => request()->header('X-Request-Id', 'n/a'),
+        ];
+    }
+}
+```
+
+#### Example 4: Querying Audit Logs by User and Source
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\User;
+use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+
+final class AuditReportService
+{
+    public function getUserActivity(User $user, string $action = null): array
+    {
+        $query = EloquentAuditLog::forCauser(User::class)
+            ->forCauserId($user->id)
+            ->orderBy('created_at', 'desc');
+            
+        if ($action) {
+            $query->forAction($action);
+        }
+        
+        return $query->get()->map(function ($log) {
+            return [
+                'entity_type' => $log->entity_type,
+                'entity_id' => $log->entity_id,
+                'action' => $log->action,
+                'source' => $log->source,
+                'created_at' => $log->created_at,
+                'metadata' => $log->metadata,
+            ];
+        })->toArray();
+    }
+    
+    public function getHttpRequestChanges(string $controller = null): array
+    {
+        $query = EloquentAuditLog::fromHttp();
+        
+        if ($controller) {
+            $query->fromController($controller);
+        }
+        
+        return $query->get()->toArray();
+    }
+    
+    public function getConsoleChanges(string $command = null): array
+    {
+        $query = EloquentAuditLog::fromConsole();
+        
+        if ($command) {
+            $query->fromCommand($command);
+        }
+        
+        return $query->get()->toArray();
+    }
+}
+```
+
+### Configuration for User Tracking
+
+The causer (user) resolution can be configured in the `config/audit-logger.php` file:
+
+```php
+'causer' => [
+    'guard' => null, // null means use default guard, or specify 'api', 'web', etc.
+    'model' => null, // null means auto-detect, or specify 'App\Models\CustomUser'
+    'resolver' => null, // null means use default resolver, or specify custom class
+],
+```
+
+#### Custom Causer Resolver
+
+You can create a custom causer resolver for complex scenarios:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface;
+use Illuminate\Support\Facades\Auth;
+
+final class CustomCauserResolver implements CauserResolverInterface
+{
+    public function resolve(): array
+    {
+        // Custom logic for resolving the causer
+        if (Auth::guard('api')->check()) {
+            $user = Auth::guard('api')->user();
+            return [
+                'type' => get_class($user),
+                'id' => $user->id,
+            ];
+        }
+        
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            return [
+                'type' => get_class($user),
+                'id' => $user->id,
+            ];
+        }
+        
+        // For system operations, you might want to return a system user
+        return [
+            'type' => 'System',
+            'id' => 'system',
+        ];
+    }
+}
+```
+
+Register your custom resolver in a service provider:
+
+```php
+// In AppServiceProvider or custom service provider
+$this->app->bind(
+    \iamfarhad\LaravelAuditLog\Contracts\CauserResolverInterface::class,
+    \App\Services\CustomCauserResolver::class
+);
+```
+
 #### Excluding Fields
 
 To exclude specific fields from being audited, define the `$auditExclude` property:
