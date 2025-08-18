@@ -33,7 +33,7 @@ trait Auditable
                     entityId: $model->getKey(),
                     action: 'created',
                     oldValues: null,
-                    newValues: $model->getAttributes(),
+                    newValues: $model->getAuditableAttributes($model->getAttributes()),
                     metadata: $model->getAuditMetadata(),
                     causerType: $causer['type'],
                     causerId: $causer['id'],
@@ -45,8 +45,8 @@ trait Auditable
 
         static::updated(function (Model $model) {
             if ($model->isAuditingEnabled()) {
-                $oldValues = $model->getOriginal();
-                $newValues = $model->getChanges();
+                $oldValues = $model->getAuditableAttributes($model->getOriginal());
+                $newValues = $model->getAuditableAttributes($model->getChanges());
 
                 $oldValues = array_intersect_key($oldValues, $newValues);
 
@@ -81,7 +81,7 @@ trait Auditable
                     entityType: $model->getAuditEntityType(),
                     entityId: $model->getKey(),
                     action: 'deleted',
-                    oldValues: $model->getOriginal(),
+                    oldValues: $model->getAuditableAttributes($model->getOriginal()),
                     newValues: null,
                     metadata: $model->getAuditMetadata(),
                     causerType: $causer['type'],
@@ -104,7 +104,7 @@ trait Auditable
                         entityId: $model->getKey(),
                         action: 'restored',
                         oldValues: null,
-                        newValues: $model->getAttributes(),
+                        newValues: $model->getAuditableAttributes($model->getAttributes()),
                         metadata: $model->getAuditMetadata(),
                         causerType: $causer['type'],
                         causerId: $causer['id'],
