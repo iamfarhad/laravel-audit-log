@@ -55,13 +55,13 @@ final class UserModelAuditExclusionInclusionTest extends TestCase
         $this->assertArrayNotHasKey(
             'password',
             $newValues,
-            'Password field should be excluded from audit logs but it appears in: ' . json_encode(array_keys($newValues))
+            'Password field should be excluded from audit logs but it appears in: '.json_encode(array_keys($newValues))
         );
 
         $this->assertArrayNotHasKey(
             'remember_token',
             $newValues,
-            'Remember token should be excluded from audit logs but it appears in: ' . json_encode(array_keys($newValues))
+            'Remember token should be excluded from audit logs but it appears in: '.json_encode(array_keys($newValues))
         );
     }
 
@@ -124,7 +124,7 @@ final class UserModelAuditExclusionInclusionTest extends TestCase
     public function test_user_model_respects_global_and_model_exclusions(): void
     {
         // Create user with all possible fields that might be excluded
-        $user = new User();
+        $user = new User;
         $user->name = 'Test User';
         $user->email = 'test@example.com';
         $user->password = 'secret-password';
@@ -159,7 +159,7 @@ final class UserModelAuditExclusionInclusionTest extends TestCase
     public function test_user_model_audit_exclusions_with_disabled_auditing(): void
     {
         // Create user with auditing disabled
-        $user = new User();
+        $user = new User;
         $user->disableAuditing();
         $user->name = 'Test User';
         $user->email = 'test@example.com';
@@ -222,26 +222,26 @@ final class UserModelAuditExclusionInclusionTest extends TestCase
         $this->assertArrayNotHasKey(
             'content',
             $newValues,
-            'Content field should not be audited because it is not in auditInclude array. Found fields: ' . json_encode(array_keys($newValues))
+            'Content field should not be audited because it is not in auditInclude array. Found fields: '.json_encode(array_keys($newValues))
         );
 
         $this->assertArrayNotHasKey(
             'user_id',
             $newValues,
-            'User ID field should not be audited because it is not in auditInclude array. Found fields: ' . json_encode(array_keys($newValues))
+            'User ID field should not be audited because it is not in auditInclude array. Found fields: '.json_encode(array_keys($newValues))
         );
 
         // Global exclusions should still apply (timestamps should be excluded)
         $this->assertArrayNotHasKey(
             'created_at',
             $newValues,
-            'Created at timestamp should be excluded by global config. Found fields: ' . json_encode(array_keys($newValues))
+            'Created at timestamp should be excluded by global config. Found fields: '.json_encode(array_keys($newValues))
         );
 
         $this->assertArrayNotHasKey(
             'updated_at',
             $newValues,
-            'Updated at timestamp should be excluded by global config. Found fields: ' . json_encode(array_keys($newValues))
+            'Updated at timestamp should be excluded by global config. Found fields: '.json_encode(array_keys($newValues))
         );
     }
 
