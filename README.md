@@ -61,7 +61,7 @@ The package uses a high-performance direct logging architecture with optional qu
 ## Requirements
 
 - **PHP**: 8.1 or higher
-- **Laravel**: 10.x, 11.x, or 12.x
+- **Laravel**: 10.x, 11.x,12.x or 13.x
 - **Database**: MySQL 8.0+ (for the default driver)
 
 ## Installation
