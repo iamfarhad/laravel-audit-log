@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace iamfarhad\LaravelAuditLog\Tests\Unit;
 
+use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Services\AuditBuilder;
 use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
 use Mockery;
 
 final class AuditBuilderTest extends TestCase
@@ -18,7 +20,7 @@ final class AuditBuilderTest extends TestCase
         // Create a fake AuditLogger since the class is final
         $fakeLogger = new class
         {
-            public function log(\iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface $log): void
+            public function log(AuditLogInterface $log): void
             {
                 // Do nothing - this is a fake for unit tests
             }
@@ -108,7 +110,7 @@ final class AuditBuilderTest extends TestCase
     public function test_filters_values_using_get_auditable_attributes_if_available(): void
     {
         // Create a concrete class with getAuditableAttributes method instead of using a mock
-        $model = new class extends \Illuminate\Database\Eloquent\Model
+        $model = new class extends Model
         {
             protected $primaryKey = 'id';
 

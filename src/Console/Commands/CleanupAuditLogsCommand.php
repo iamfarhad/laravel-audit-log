@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Console\Commands;
 
 use iamfarhad\LaravelAuditLog\Contracts\RetentionServiceInterface;
+use iamfarhad\LaravelAuditLog\DTOs\RetentionResult;
 use Illuminate\Console\Command;
 
 final class CleanupAuditLogsCommand extends Command
@@ -68,7 +69,7 @@ final class CleanupAuditLogsCommand extends Command
         if (! $retentionService->isRetentionEnabledForEntity($entity)) {
             $this->warn("Retention is not enabled for entity: {$entity}");
 
-            return \iamfarhad\LaravelAuditLog\DTOs\RetentionResult::empty();
+            return RetentionResult::empty();
         }
 
         $this->info("Processing entity: {$entity}");
@@ -82,7 +83,7 @@ final class CleanupAuditLogsCommand extends Command
                 $this->line("  - Anonymize after: {$config['anonymize_after_days']} days");
             }
 
-            return \iamfarhad\LaravelAuditLog\DTOs\RetentionResult::empty();
+            return RetentionResult::empty();
         }
 
         return $retentionService->runCleanupForEntity($entity);
@@ -95,7 +96,7 @@ final class CleanupAuditLogsCommand extends Command
         if (empty($entities)) {
             $this->warn('No entities configured for audit logging.');
 
-            return \iamfarhad\LaravelAuditLog\DTOs\RetentionResult::empty();
+            return RetentionResult::empty();
         }
 
         $this->info('Processing '.count($entities).' entities...');
@@ -110,13 +111,13 @@ final class CleanupAuditLogsCommand extends Command
                 }
             }
 
-            return \iamfarhad\LaravelAuditLog\DTOs\RetentionResult::empty();
+            return RetentionResult::empty();
         }
 
         return $retentionService->runCleanup();
     }
 
-    private function displayResults(\iamfarhad\LaravelAuditLog\DTOs\RetentionResult $result, bool $dryRun): void
+    private function displayResults(RetentionResult $result, bool $dryRun): void
     {
         if ($dryRun) {
             return;

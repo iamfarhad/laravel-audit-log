@@ -8,6 +8,7 @@ use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogSyncJob;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Mockery;
 
 final class ProcessAuditLogSyncJobTest extends TestCase
@@ -96,10 +97,10 @@ final class ProcessAuditLogSyncJobTest extends TestCase
             source: 'test'
         );
 
-        $job = new ProcessAuditLogSyncJob($auditLog, Mockery::mock(\iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface::class));
+        $job = new ProcessAuditLogSyncJob($auditLog, Mockery::mock(AuditDriverInterface::class));
 
         // Assert - sync job should not implement ShouldQueue
-        $this->assertFalse($job instanceof \Illuminate\Contracts\Queue\ShouldQueue);
+        $this->assertFalse($job instanceof ShouldQueue);
     }
 
     protected function tearDown(): void

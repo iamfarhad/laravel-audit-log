@@ -103,7 +103,7 @@ final class ProcessAuditLogJobTest extends TestCase
         );
 
         // Act
-        $job = new ProcessAuditLogJob($auditLog, Mockery::mock(\iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface::class));
+        $job = new ProcessAuditLogJob($auditLog, Mockery::mock(AuditDriverInterface::class));
 
         // Assert
         $this->assertEquals('custom-audit', $job->queue);
