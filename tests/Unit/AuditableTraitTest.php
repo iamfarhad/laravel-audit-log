@@ -25,6 +25,17 @@ final class AuditableTraitTest extends TestCase
         $this->assertTrue($user->isAuditingEnabled());
     }
 
+    public function test_global_config_can_disable_auditing(): void
+    {
+        config(['audit-logger.enabled' => false]);
+
+        $user = new User;
+        $this->assertFalse($user->isAuditingEnabled());
+
+        $user->enableAuditing();
+        $this->assertFalse($user->isAuditingEnabled());
+    }
+
     public function test_can_get_audit_entity_type(): void
     {
         $user = new User;
@@ -161,6 +172,38 @@ final class AuditableTraitTest extends TestCase
 
         $user->name = 'Updated Name';
         $user->save();
+
+        $this->assertDatabaseMissing('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'updated',
+        ]);
+
+        $user->delete();
+
+        $this->assertDatabaseMissing('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'deleted',
+        ]);
+    }
+
+    public function test_globally_disabled_auditing_does_not_create_logs(): void
+    {
+        config(['audit-logger.enabled' => false]);
+        DB::table('audit_users_logs')->delete();
+
+        $user = User::create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'is_active' => true,
+        ]);
+
+        $this->assertDatabaseMissing('audit_users_logs', [
+            'entity_id' => $user->id,
+            'action' => 'created',
+        ]);
+
+        $user->update(['name' => 'Updated Name']);
 
         $this->assertDatabaseMissing('audit_users_logs', [
             'entity_id' => $user->id,
