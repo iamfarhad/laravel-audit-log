@@ -105,4 +105,35 @@ final class CustomAuditActionTest extends TestCase
             'causer_id' => $this->user->id,
         ]);
     }
+
+    public function test_globally_disabled_auditing_does_not_log_custom_actions(): void
+    {
+        config(['audit-logger.enabled' => false]);
+
+        $auditLogger = app(AuditLogger::class);
+
+        $auditLog = new AuditLog(
+            entityType: Post::class,
+            entityId: $this->post->id,
+            action: 'approved',
+            oldValues: ['status' => 'draft'],
+            newValues: ['status' => 'published'],
+            causerType: User::class,
+            causerId: $this->user->id,
+            metadata: [
+                'approved_by' => $this->user->id,
+                'approved_at' => now()->toDateTimeString(),
+                'comments' => 'Content looks good',
+            ],
+            createdAt: Carbon::now(),
+            source: 'test'
+        );
+
+        $auditLogger->log($auditLog);
+
+        $this->assertDatabaseMissing('audit_posts_logs', [
+            'entity_id' => $this->post->id,
+            'action' => 'approved',
+        ]);
+    }
 }
