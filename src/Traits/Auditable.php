@@ -121,6 +121,10 @@ trait Auditable
      */
     public function isAuditingEnabled(): bool
     {
+        if (! (bool) config('audit-logger.enabled', true)) {
+            return false;
+        }
+
         if (! property_exists($this, 'auditingEnabled')) {
             return true;
         }
