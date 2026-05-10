@@ -5,6 +5,18 @@ declare(strict_types=1);
 return [
     /*
     |--------------------------------------------------------------------------
+    | Audit Logging
+    |--------------------------------------------------------------------------
+    |
+    | This option controls whether audit logging is enabled globally. Set
+    | AUDIT_ENABLED=false to disable all audit writes, which is useful for
+    | test environments where audit tables are not required.
+    |
+    */
+    'enabled' => env('AUDIT_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Audit Driver
     |--------------------------------------------------------------------------
     |
