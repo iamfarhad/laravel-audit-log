@@ -31,6 +31,10 @@ final class AuditHashVerifier
             );
         }
 
+        $previousHash = null;
+        $failures = [];
+        $checked = 0;
+
         try {
             $query = $model->newQuery()->orderBy('id');
 
@@ -38,44 +42,40 @@ final class AuditHashVerifier
                 $query->where('entity_id', (string) $entityId);
             }
 
-            $logs = $query->get();
+            foreach ($query->lazy() as $log) {
+                $checked++;
+                $expected = $this->hash->compute(AuditLog::fromArray([
+                    'entity_type' => $entityClass,
+                    'entity_id' => $log->entity_id,
+                    'action' => $log->action,
+                    'old_values' => $log->old_values,
+                    'new_values' => $log->new_values,
+                    'causer_type' => $log->causer_type,
+                    'causer_id' => $log->causer_id,
+                    'metadata' => $log->metadata ?? [],
+                    'created_at' => $log->created_at,
+                    'source' => $log->source,
+                ]), $previousHash);
+
+                if (($log->previous_hash ?? null) !== $previousHash || ($log->audit_hash ?? null) !== $expected) {
+                    $failures[] = [
+                        'code' => 'hash_mismatch',
+                        'message' => 'The stored audit hash or previous hash does not match the expected value.',
+                        'id' => $log->getKey(),
+                        'expected_previous_hash' => $previousHash,
+                        'actual_previous_hash' => $log->previous_hash ?? null,
+                        'expected_audit_hash' => $expected,
+                        'actual_audit_hash' => $log->audit_hash ?? null,
+                    ];
+                }
+
+                $previousHash = $log->audit_hash ?? null;
+            }
         } catch (Throwable $exception) {
             return $this->failure('verification_query_failed', $exception->getMessage());
         }
 
-        $previousHash = null;
-        $failures = [];
-
-        foreach ($logs as $log) {
-            $expected = $this->hash->compute(AuditLog::fromArray([
-                'entity_type' => $entityClass,
-                'entity_id' => $log->entity_id,
-                'action' => $log->action,
-                'old_values' => $log->old_values,
-                'new_values' => $log->new_values,
-                'causer_type' => $log->causer_type,
-                'causer_id' => $log->causer_id,
-                'metadata' => $log->metadata ?? [],
-                'created_at' => $log->created_at,
-                'source' => $log->source,
-            ]), $previousHash);
-
-            if (($log->previous_hash ?? null) !== $previousHash || ($log->audit_hash ?? null) !== $expected) {
-                $failures[] = [
-                    'code' => 'hash_mismatch',
-                    'message' => 'The stored audit hash or previous hash does not match the expected value.',
-                    'id' => $log->getKey(),
-                    'expected_previous_hash' => $previousHash,
-                    'actual_previous_hash' => $log->previous_hash ?? null,
-                    'expected_audit_hash' => $expected,
-                    'actual_audit_hash' => $log->audit_hash ?? null,
-                ];
-            }
-
-            $previousHash = $log->audit_hash ?? null;
-        }
-
-        return ['valid' => $failures === [], 'checked' => $logs->count(), 'failures' => $failures];
+        return ['valid' => $failures === [], 'checked' => $checked, 'failures' => $failures];
     }
 
     /** @return array{valid: false, checked: 0, failures: array<int, array<string, string>>} */
