@@ -6,6 +6,8 @@ namespace iamfarhad\LaravelAuditLog\Services;
 
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 final class AuditHashVerifier
 {
@@ -14,13 +16,33 @@ final class AuditHashVerifier
     /** @return array{valid: bool, checked: int, failures: array<int, array<string, mixed>>} */
     public function verify(string $entityClass, string|int|null $entityId = null): array
     {
-        $query = EloquentAuditLog::forEntity($entityClass)->newQuery()->orderBy('id');
+        $model = EloquentAuditLog::forEntity($entityClass);
+        $connection = $model->getConnectionName();
+        $table = $model->getTable();
 
-        if ($entityId !== null) {
-            $query->where('entity_id', (string) $entityId);
+        if (! Schema::connection($connection)->hasTable($table)) {
+            return $this->failure('missing_audit_table', "Audit table [{$table}] does not exist.");
         }
 
-        $logs = $query->get();
+        if (! Schema::connection($connection)->hasColumn($table, 'audit_hash') || ! Schema::connection($connection)->hasColumn($table, 'previous_hash')) {
+            return $this->failure(
+                'missing_hash_columns',
+                "Audit table [{$table}] must have nullable [audit_hash] and [previous_hash] columns before hash-chain verification can run."
+            );
+        }
+
+        try {
+            $query = $model->newQuery()->orderBy('id');
+
+            if ($entityId !== null) {
+                $query->where('entity_id', (string) $entityId);
+            }
+
+            $logs = $query->get();
+        } catch (Throwable $exception) {
+            return $this->failure('verification_query_failed', $exception->getMessage());
+        }
+
         $previousHash = null;
         $failures = [];
 
@@ -40,6 +62,8 @@ final class AuditHashVerifier
 
             if (($log->previous_hash ?? null) !== $previousHash || ($log->audit_hash ?? null) !== $expected) {
                 $failures[] = [
+                    'code' => 'hash_mismatch',
+                    'message' => 'The stored audit hash or previous hash does not match the expected value.',
                     'id' => $log->getKey(),
                     'expected_previous_hash' => $previousHash,
                     'actual_previous_hash' => $log->previous_hash ?? null,
@@ -52,5 +76,17 @@ final class AuditHashVerifier
         }
 
         return ['valid' => $failures === [], 'checked' => $logs->count(), 'failures' => $failures];
+    }
+
+    /** @return array{valid: false, checked: 0, failures: array<int, array<string, string>>} */
+    private function failure(string $code, string $message): array
+    {
+        return [
+            'valid' => false,
+            'checked' => 0,
+            'failures' => [
+                ['code' => $code, 'message' => $message],
+            ],
+        ];
     }
 }
