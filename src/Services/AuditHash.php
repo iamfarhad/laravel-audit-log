@@ -15,7 +15,7 @@ final class AuditHash
 
     public function compute(AuditLogInterface $log, ?string $previousHash): string
     {
-        $payload = [
+        $payload = $this->sortRecursive([
             'previous_hash' => $previousHash,
             'entity_type' => $log->getEntityType(),
             'entity_id' => (string) $log->getEntityId(),
@@ -27,12 +27,42 @@ final class AuditHash
             'metadata' => $log->getMetadata(),
             'source' => $log->getSource(),
             'created_at' => $log->getCreatedAt()->format(DATE_ATOM),
-        ];
+        ]);
 
         $serialized = json_encode($payload, JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $algorithm = (string) config('audit-logger.security.hashing.algorithm', 'sha256');
+
+        return hash_hmac($algorithm, $serialized, $this->key());
+    }
+
+    /** @param array<mixed> $value */
+    private function sortRecursive(array $value): array
+    {
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->sortRecursive($item);
+            }
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
+    }
+
+    private function key(): string
+    {
         $key = (string) config('audit-logger.security.hashing.key', config('app.key', ''));
 
-        return hash_hmac($algorithm, $serialized, $key);
+        if (str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode(substr($key, 7), true);
+
+            if ($decoded !== false) {
+                return $decoded;
+            }
+        }
+
+        return $key;
     }
 }
