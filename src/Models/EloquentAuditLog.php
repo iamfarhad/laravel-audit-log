@@ -10,8 +10,6 @@ use Illuminate\Support\Str;
 
 final class EloquentAuditLog extends Model
 {
-    private static ?array $configCache = null;
-
     public $timestamps = false;
 
     protected $fillable = [
@@ -32,12 +30,11 @@ final class EloquentAuditLog extends Model
         'old_values' => 'json',
         'new_values' => 'json',
         'metadata' => 'array',
-        'created_at' => 'datetime',
     ];
 
     public function getConnectionName(): ?string
     {
-        $config = self::getConfigCache();
+        $config = config('audit-logger');
         $driverName = $config['default'] ?? 'mysql';
 
         return $config['drivers'][$driverName]['connection'] ?? config('database.default');
@@ -95,7 +92,7 @@ final class EloquentAuditLog extends Model
 
     public function scopeDateBetween(Builder $query, $startDate, $endDate): Builder
     {
-        return $query->where(function (Builder $query) use ($startDate, $endDate) {
+        return $query->where(function (Builder $query) use ($startDate, $endDate): void {
             $query->where('created_at', '>=', $startDate)
                 ->where('created_at', '<=', $endDate);
         });
@@ -133,7 +130,7 @@ final class EloquentAuditLog extends Model
 
     public function scopeFromHttp(Builder $query): Builder
     {
-        return $query->where(function (Builder $query) {
+        return $query->where(function (Builder $query): void {
             $query->where('source', 'like', 'App\\Http\\Controllers\\%')
                 ->orWhere('source', 'like', 'App\\\\Http\\\\Controllers\\\\%')
                 ->orWhere('source', '=', 'http');
@@ -153,24 +150,15 @@ final class EloquentAuditLog extends Model
             return $query->where('source', 'like', "%{$escapedController}%");
         }
 
-        return $query->where(function (Builder $query) {
+        return $query->where(function (Builder $query): void {
             $query->where('source', 'like', 'App\\Http\\Controllers\\%')
                 ->orWhere('source', 'like', 'App\\\\Http\\\\Controllers\\\\%');
         });
     }
 
-    private static function getConfigCache(): array
-    {
-        if (self::$configCache === null) {
-            self::$configCache = config('audit-logger');
-        }
-
-        return self::$configCache;
-    }
-
     public static function forEntity(string $entityClass): static
     {
-        $config = self::getConfigCache();
+        $config = config('audit-logger');
         $driverName = $config['default'] ?? 'mysql';
         $driverConfig = $config['drivers'][$driverName] ?? $config['drivers']['mysql'] ?? [];
         $entityConfig = $config['entities'][$entityClass] ?? [];
