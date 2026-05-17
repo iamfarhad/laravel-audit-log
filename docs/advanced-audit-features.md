@@ -61,7 +61,68 @@ Use `restoreFromAudit()` for replaying a previous audited state and `rollbackToA
 
 ## Tamper-evident hash chain
 
-Enable hash-chain storage in `config/audit-logger.php` or `.env`:
+Hash-chain storage is disabled by default for backward compatibility. Enable it only after your existing audit tables have the required nullable columns.
+
+```env
+AUDIT_HASH_CHAIN_ENABLED=false
+```
+
+Add these columns to every existing audit table before enabling hash-chain storage:
+
+```php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /** @var array<int, string> */
+    private array $tables = [
+        'audit_users_logs',
+        'audit_orders_logs',
+    ];
+
+    public function up(): void
+    {
+        foreach ($this->tables as $tableName) {
+            if (! Schema::hasTable($tableName)) {
+                continue;
+            }
+
+            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+                if (! Schema::hasColumn($tableName, 'audit_hash')) {
+                    $table->string('audit_hash', 128)->nullable()->after('source')->index();
+                }
+
+                if (! Schema::hasColumn($tableName, 'previous_hash')) {
+                    $table->string('previous_hash', 128)->nullable()->after('audit_hash')->index();
+                }
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        foreach ($this->tables as $tableName) {
+            if (! Schema::hasTable($tableName)) {
+                continue;
+            }
+
+            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+                if (Schema::hasColumn($tableName, 'previous_hash')) {
+                    $table->dropColumn('previous_hash');
+                }
+
+                if (Schema::hasColumn($tableName, 'audit_hash')) {
+                    $table->dropColumn('audit_hash');
+                }
+            });
+        }
+    }
+};
+```
+
+Then enable hash-chain storage in `config/audit-logger.php` or `.env`:
 
 ```env
 AUDIT_HASH_CHAIN_ENABLED=true
@@ -69,10 +130,12 @@ AUDIT_HASH_ALGORITHM=sha256
 AUDIT_HASH_KEY=base64-or-secret-key
 ```
 
-When enabled, each audit row stores:
+When enabled, each new audit row stores:
 
 - `previous_hash`: the prior audit row hash for that audited entity table
 - `audit_hash`: an HMAC of the canonical audit payload plus `previous_hash`
+
+Rows created before hash-chain mode is enabled will not have historical hash values. Treat the first hashed row after enabling as the start of the verifiable chain.
 
 Verify a chain:
 
@@ -83,6 +146,8 @@ if (! $result['valid']) {
     report($result['failures']);
 }
 ```
+
+If the audit table or hash columns are missing, verification returns a structured failure with a `missing_audit_table` or `missing_hash_columns` code instead of throwing a database exception.
 
 ## Field redaction and transformers
 
