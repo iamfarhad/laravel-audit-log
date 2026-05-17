@@ -16,10 +16,15 @@ use Illuminate\Support\Str;
 final class MySQLDriver implements AuditDriverInterface
 {
     private string $tablePrefix;
+
     private string $tableSuffix;
+
     private array $config;
+
     private string $connection;
+
     private static array $existingTables = [];
+
     private static ?array $configCache = null;
 
     public function __construct(?string $connection = null)
@@ -35,6 +40,7 @@ final class MySQLDriver implements AuditDriverInterface
         if (self::$configCache === null) {
             self::$configCache = config('audit-logger');
         }
+
         return self::$configCache;
     }
 
@@ -106,6 +112,7 @@ final class MySQLDriver implements AuditDriverInterface
         if (isset(self::$existingTables[$tableName])) {
             return self::$existingTables[$tableName];
         }
+
         return self::$existingTables[$tableName] = Schema::connection($this->connection)->hasTable($tableName);
     }
 
@@ -149,6 +156,7 @@ final class MySQLDriver implements AuditDriverInterface
             $payload['previous_hash'] = $previousHash;
             $payload['audit_hash'] = $hash->compute($log, $previousHash);
         }
+
         return $payload;
     }
 
@@ -159,6 +167,7 @@ final class MySQLDriver implements AuditDriverInterface
             ->whereNotNull('audit_hash')
             ->orderByDesc('id')
             ->value('audit_hash');
+
         return is_string($value) ? $value : null;
     }
 
@@ -172,6 +181,7 @@ final class MySQLDriver implements AuditDriverInterface
         if (! str_ends_with($tableName, $this->tableSuffix)) {
             $tableName = "{$tableName}{$this->tableSuffix}";
         }
+
         return $tableName;
     }
 }

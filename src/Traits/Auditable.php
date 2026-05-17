@@ -117,18 +117,21 @@ trait Auditable
         if (! (bool) config('audit-logger.enabled', true)) {
             return false;
         }
+
         return ! property_exists($this, 'auditingEnabled') || $this->auditingEnabled;
     }
 
     public function enableAuditing(): self
     {
         $this->auditingEnabled = true;
+
         return $this;
     }
 
     public function disableAuditing(): self
     {
         $this->auditingEnabled = false;
+
         return $this;
     }
 
@@ -199,12 +202,14 @@ trait Auditable
     public function restoreFromAudit(EloquentAuditLog|int|string $auditLog, bool $save = true): self
     {
         app(AuditRestorer::class)->restore($this, $auditLog, $save);
+
         return $this;
     }
 
     public function rollbackToAudit(EloquentAuditLog|int|string $auditLog, bool $save = true): self
     {
         app(AuditRestorer::class)->rollback($this, $auditLog, $save);
+
         return $this;
     }
 
@@ -227,24 +232,28 @@ trait Auditable
     public function isRetentionEnabled(): bool
     {
         $config = $this->getAuditRetentionConfig();
+
         return isset($config['enabled']) ? (bool) $config['enabled'] : config('audit-logger.retention.enabled', false);
     }
 
     public function getRetentionStrategy(): string
     {
         $config = $this->getAuditRetentionConfig();
+
         return $config['strategy'] ?? config('audit-logger.retention.strategy', 'delete');
     }
 
     public function getRetentionDays(): int
     {
         $config = $this->getAuditRetentionConfig();
+
         return $config['days'] ?? config('audit-logger.retention.days', 365);
     }
 
     public function getAnonymizeDays(): int
     {
         $config = $this->getAuditRetentionConfig();
+
         return $config['anonymize_after_days'] ?? config('audit-logger.retention.anonymize_after_days', 180);
     }
 }

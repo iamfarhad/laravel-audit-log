@@ -6,6 +6,7 @@ namespace iamfarhad\LaravelAuditLog\Tests\Feature;
 
 use iamfarhad\LaravelAuditLog\Facades\AuditLogger as AuditLoggerFacade;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use iamfarhad\LaravelAuditLog\Services\AuditLogger;
 use iamfarhad\LaravelAuditLog\Tests\TestCase;
 use iamfarhad\LaravelAuditLog\Traits\Auditable;
 use iamfarhad\LaravelAuditLog\Transformers\MaskEmailTransformer;
@@ -121,9 +122,9 @@ final class AdvancedAuditFeaturesTest extends TestCase
 
     public function test_postgresql_driver_can_be_resolved(): void
     {
-        $logger = \iamfarhad\LaravelAuditLog\Services\AuditLogger::getDriver('postgresql', 'testbench');
+        $logger = AuditLogger::getDriver('postgresql', 'testbench');
 
-        $this->assertInstanceOf(\iamfarhad\LaravelAuditLog\Services\AuditLogger::class, $logger);
+        $this->assertInstanceOf(AuditLogger::class, $logger);
     }
 }
 

@@ -21,12 +21,14 @@ final class AuditQuery
     public function forEntityId(string|int $entityId): self
     {
         $this->query->where('entity_id', (string) $entityId);
+
         return $this;
     }
 
     public function forAction(string|array $action): self
     {
         is_array($action) ? $this->query->whereIn('action', $action) : $this->query->where('action', $action);
+
         return $this;
     }
 
@@ -36,12 +38,14 @@ final class AuditQuery
         if ($causerId !== null) {
             $this->query->where('causer_id', (string) $causerId);
         }
+
         return $this;
     }
 
     public function between(mixed $from, mixed $to): self
     {
         $this->query->whereBetween('created_at', [$from, $to]);
+
         return $this;
     }
 
@@ -58,12 +62,14 @@ final class AuditQuery
                 ->orWhere('new_values', 'like', $like)
                 ->orWhere('metadata', 'like', $like);
         });
+
         return $this;
     }
 
     public function latest(): self
     {
         $this->query->orderByDesc('created_at')->orderByDesc('id');
+
         return $this;
     }
 
@@ -77,6 +83,7 @@ final class AuditQuery
     {
         /** @var EloquentAuditLog|null $log */
         $log = $this->query->first($columns);
+
         return $log;
     }
 

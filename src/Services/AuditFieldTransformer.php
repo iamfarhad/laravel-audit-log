@@ -11,7 +11,7 @@ use InvalidArgumentException;
 final class AuditFieldTransformer
 {
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
      */
     public function transform(array $attributes, Model $model, string $direction): array
@@ -23,6 +23,7 @@ final class AuditFieldTransformer
         foreach ($attributes as $field => $value) {
             if (in_array($field, $redactedFields, true)) {
                 $attributes[$field] = $replacement;
+
                 continue;
             }
 
