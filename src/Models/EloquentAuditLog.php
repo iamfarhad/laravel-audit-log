@@ -6,6 +6,7 @@ namespace iamfarhad\LaravelAuditLog\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class EloquentAuditLog extends Model
@@ -106,16 +107,23 @@ final class EloquentAuditLog extends Model
     public function scopeSearch(Builder $query, string $term): Builder
     {
         $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+        $jsonColumns = ['old_values', 'new_values', 'metadata'];
+        $isPostgreSQL = $query->getModel()->getConnection()->getDriverName() === 'pgsql';
 
-        return $query->where(function (Builder $query) use ($like): void {
+        return $query->where(function (Builder $query) use ($isPostgreSQL, $jsonColumns, $like): void {
             $query->where('entity_id', 'like', $like)
                 ->orWhere('action', 'like', $like)
                 ->orWhere('source', 'like', $like)
                 ->orWhere('causer_type', 'like', $like)
-                ->orWhere('causer_id', 'like', $like)
-                ->orWhere('old_values', 'like', $like)
-                ->orWhere('new_values', 'like', $like)
-                ->orWhere('metadata', 'like', $like);
+                ->orWhere('causer_id', 'like', $like);
+
+            foreach ($jsonColumns as $column) {
+                if ($isPostgreSQL) {
+                    $query->orWhereRaw(DB::getQueryGrammar()->wrap($column).'::text LIKE ?', [$like]);
+                } else {
+                    $query->orWhere($column, 'like', $like);
+                }
+            }
         });
     }
 
@@ -162,17 +170,12 @@ final class EloquentAuditLog extends Model
         $driverName = $config['default'] ?? 'mysql';
         $driverConfig = $config['drivers'][$driverName] ?? $config['drivers']['mysql'] ?? [];
         $entityConfig = $config['entities'][$entityClass] ?? [];
-        $className = Str::snake(class_basename($entityClass));
-        $tableName = $entityConfig['audit_table'] ?? $entityConfig['table'] ?? Str::plural($className);
-        $tablePrefix = $driverConfig['table_prefix'] ?? 'audit_';
-        $tableSuffix = $driverConfig['table_suffix'] ?? '_logs';
+        $tableName = $entityConfig['audit_table'] ?? $entityConfig['table'] ?? null;
 
-        if (! str_starts_with($tableName, $tablePrefix)) {
-            $tableName = "{$tablePrefix}{$tableName}";
-        }
-
-        if (! str_ends_with($tableName, $tableSuffix)) {
-            $tableName = "{$tableName}{$tableSuffix}";
+        if ($tableName === null) {
+            $tablePrefix = $driverConfig['table_prefix'] ?? 'audit_';
+            $tableSuffix = $driverConfig['table_suffix'] ?? '_logs';
+            $tableName = $tablePrefix.Str::plural(Str::snake(class_basename($entityClass))).$tableSuffix;
         }
 
         $instance = new self;
