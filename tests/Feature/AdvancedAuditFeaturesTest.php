@@ -16,9 +16,7 @@ final class AdvancedAuditFeaturesTest extends TestCase
 {
     public function test_can_search_timeline_diff_and_analytics(): void
     {
-        config(['audit-logger.entities' => [AdvancedAuditUser::class => ['audit_table' => 'audit_users_logs']]]);
-
-        $user = AdvancedAuditUser::create([
+        $user = User::create([
             'name' => 'Farhad',
             'email' => 'farhad@example.com',
             'password' => 'secret',
@@ -26,10 +24,10 @@ final class AdvancedAuditFeaturesTest extends TestCase
 
         $user->update(['name' => 'Farhad Zand']);
 
-        $searchResults = AuditLoggerFacade::search(AdvancedAuditUser::class, 'Farhad Zand')->get();
+        $searchResults = AuditLoggerFacade::search(User::class, 'Farhad Zand')->get();
         $timeline = $user->auditTimeline();
         $diff = $user->auditDiff();
-        $summary = AuditLoggerFacade::analytics()->summary(AdvancedAuditUser::class);
+        $summary = AuditLoggerFacade::analytics()->summary(User::class);
 
         $this->assertCount(1, $searchResults);
         $this->assertCount(2, $timeline);
@@ -44,9 +42,7 @@ final class AdvancedAuditFeaturesTest extends TestCase
 
     public function test_can_restore_and_rollback_without_saving(): void
     {
-        config(['audit-logger.entities' => [AdvancedAuditUser::class => ['audit_table' => 'audit_users_logs']]]);
-
-        $user = AdvancedAuditUser::create([
+        $user = User::create([
             'name' => 'Original',
             'email' => 'restore@example.com',
             'password' => 'secret',
@@ -72,14 +68,13 @@ final class AdvancedAuditFeaturesTest extends TestCase
     public function test_field_transformers_and_redactors_are_applied(): void
     {
         config([
-            'audit-logger.entities' => [AdvancedAuditUser::class => ['audit_table' => 'audit_users_logs']],
             'audit-logger.fields.redact' => ['name'],
             'audit-logger.fields.transformers' => [
                 'email' => MaskEmailTransformer::class,
             ],
         ]);
 
-        $user = AdvancedAuditUser::create([
+        $user = User::create([
             'name' => 'Sensitive Name',
             'email' => 'private@example.com',
             'password' => 'secret',
@@ -96,19 +91,18 @@ final class AdvancedAuditFeaturesTest extends TestCase
     public function test_tamper_evident_hash_chain_can_be_verified(): void
     {
         config([
-            'audit-logger.entities' => [AdvancedAuditUser::class => ['audit_table' => 'audit_users_logs']],
             'audit-logger.security.hashing.enabled' => true,
             'audit-logger.security.hashing.key' => 'test-key',
         ]);
 
-        $user = AdvancedAuditUser::create([
+        $user = User::create([
             'name' => 'Hash One',
             'email' => 'hash@example.com',
             'password' => 'secret',
         ]);
         $user->update(['name' => 'Hash Two']);
 
-        $validResult = AuditLoggerFacade::verifyHashChain(AdvancedAuditUser::class);
+        $validResult = AuditLoggerFacade::verifyHashChain(User::class);
 
         $this->assertTrue($validResult['valid']);
         $this->assertSame(2, $validResult['checked']);
@@ -119,7 +113,7 @@ final class AdvancedAuditFeaturesTest extends TestCase
             ->where('action', 'updated')
             ->update(['new_values' => json_encode(['name' => 'Tampered'], JSON_THROW_ON_ERROR)]);
 
-        $invalidResult = AuditLoggerFacade::verifyHashChain(AdvancedAuditUser::class);
+        $invalidResult = AuditLoggerFacade::verifyHashChain(User::class);
 
         $this->assertFalse($invalidResult['valid']);
         $this->assertCount(1, $invalidResult['failures']);
@@ -133,7 +127,7 @@ final class AdvancedAuditFeaturesTest extends TestCase
     }
 }
 
-final class AdvancedAuditUser extends Model
+final class User extends Model
 {
     use Auditable;
 
