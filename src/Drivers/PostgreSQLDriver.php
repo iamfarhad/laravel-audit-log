@@ -174,7 +174,13 @@ final class PostgreSQLDriver implements AuditDriverInterface
     private function getTableName(string $entityType): string
     {
         $entityConfig = $this->config['entities'][$entityType] ?? [];
-        $tableName = $entityConfig['audit_table'] ?? $entityConfig['table'] ?? Str::plural(Str::snake(class_basename($entityType)));
+        $configuredTable = $entityConfig['audit_table'] ?? $entityConfig['table'] ?? null;
+
+        if (is_string($configuredTable) && $configuredTable !== '') {
+            return $configuredTable;
+        }
+
+        $tableName = Str::plural(Str::snake(class_basename($entityType)));
         if (! str_starts_with($tableName, $this->tablePrefix)) {
             $tableName = "{$this->tablePrefix}{$tableName}";
         }
