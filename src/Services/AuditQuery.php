@@ -8,6 +8,7 @@ use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class AuditQuery
 {
@@ -52,15 +53,23 @@ final class AuditQuery
     public function search(string $term): self
     {
         $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
-        $this->query->where(function (Builder $query) use ($like): void {
+        $jsonColumns = ['old_values', 'new_values', 'metadata'];
+        $isPostgreSQL = $this->query->getModel()->getConnection()->getDriverName() === 'pgsql';
+
+        $this->query->where(function (Builder $query) use ($isPostgreSQL, $jsonColumns, $like): void {
             $query->where('entity_id', 'like', $like)
                 ->orWhere('action', 'like', $like)
                 ->orWhere('source', 'like', $like)
                 ->orWhere('causer_type', 'like', $like)
-                ->orWhere('causer_id', 'like', $like)
-                ->orWhere('old_values', 'like', $like)
-                ->orWhere('new_values', 'like', $like)
-                ->orWhere('metadata', 'like', $like);
+                ->orWhere('causer_id', 'like', $like);
+
+            foreach ($jsonColumns as $column) {
+                if ($isPostgreSQL) {
+                    $query->orWhereRaw(DB::getQueryGrammar()->wrap($column).'::text LIKE ?', [$like]);
+                } else {
+                    $query->orWhere($column, 'like', $like);
+                }
+            }
         });
 
         return $this;
