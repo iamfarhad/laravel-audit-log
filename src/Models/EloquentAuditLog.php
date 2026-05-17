@@ -10,24 +10,10 @@ use Illuminate\Support\Str;
 
 final class EloquentAuditLog extends Model
 {
-    /**
-     * Cache for configuration values to avoid repeated config() calls.
-     */
     private static ?array $configCache = null;
 
-    /**
-     * Indicates if the model should be timestamped.
-     * We handle the created_at timestamp manually.
-     *
-     * @var bool
-     */
     public $timestamps = false;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'entity_id',
         'action',
@@ -38,22 +24,23 @@ final class EloquentAuditLog extends Model
         'metadata',
         'created_at',
         'source',
+        'audit_hash',
+        'previous_hash',
     ];
 
     protected $casts = [
         'old_values' => 'json',
         'new_values' => 'json',
         'metadata' => 'array',
+        'created_at' => 'datetime',
     ];
 
-    /**
-     * Get the connection name for the model.
-     */
     public function getConnectionName(): ?string
     {
         $config = self::getConfigCache();
+        $driverName = $config['default'] ?? 'mysql';
 
-        return $config['drivers']['mysql']['connection'] ?? config('database.default');
+        return $config['drivers'][$driverName]['connection'] ?? config('database.default');
     }
 
     public function auditable()
@@ -68,7 +55,7 @@ final class EloquentAuditLog extends Model
 
     public function scopeForEntity(Builder $query, $entityClass): Builder
     {
-        return $query->where('entity_type', $entityClass);
+        return $query;
     }
 
     public function scopeForEntityId(Builder $query, $entityId): Builder
@@ -78,7 +65,7 @@ final class EloquentAuditLog extends Model
 
     public function scopeForAction(Builder $query, $action): Builder
     {
-        return $query->where('action', $action);
+        return is_array($action) ? $query->whereIn('action', $action) : $query->where('action', $action);
     }
 
     public function scopeForCauser(Builder $query, $causerClass): Builder
@@ -119,9 +106,24 @@ final class EloquentAuditLog extends Model
         return $query->where('source', $source);
     }
 
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        return $query->where(function (Builder $query) use ($like): void {
+            $query->where('entity_id', 'like', $like)
+                ->orWhere('action', 'like', $like)
+                ->orWhere('source', 'like', $like)
+                ->orWhere('causer_type', 'like', $like)
+                ->orWhere('causer_id', 'like', $like)
+                ->orWhere('old_values', 'like', $like)
+                ->orWhere('new_values', 'like', $like)
+                ->orWhere('metadata', 'like', $like);
+        });
+    }
+
     public function scopeFromConsole(Builder $query): Builder
     {
-        /** @var Builder $query */
         $query->whereNotNull('source');
         $query->where('source', 'not like', 'App\\Http\\Controllers\\%');
         $query->where('source', 'not like', 'App\\\\Http\\\\Controllers\\\\%');
@@ -146,7 +148,6 @@ final class EloquentAuditLog extends Model
     public function scopeFromController(Builder $query, ?string $controller = null): Builder
     {
         if ($controller !== null && $controller !== '') {
-            // Escape the controller string to prevent SQL injection
             $escapedController = str_replace(['%', '_'], ['\\%', '\\_'], $controller);
 
             return $query->where('source', 'like', "%{$escapedController}%");
@@ -158,9 +159,6 @@ final class EloquentAuditLog extends Model
         });
     }
 
-    /**
-     * Get cached configuration to avoid repeated config() calls.
-     */
     private static function getConfigCache(): array
     {
         if (self::$configCache === null) {
@@ -172,22 +170,27 @@ final class EloquentAuditLog extends Model
 
     public static function forEntity(string $entityClass): static
     {
-        $className = Str::snake(class_basename($entityClass));
-
-        // Handle pluralization
-        $tableName = Str::plural($className);
-
         $config = self::getConfigCache();
-        $tablePrefix = $config['drivers']['mysql']['table_prefix'] ?? 'audit_';
-        $tableSuffix = $config['drivers']['mysql']['table_suffix'] ?? '_logs';
+        $driverName = $config['default'] ?? 'mysql';
+        $driverConfig = $config['drivers'][$driverName] ?? $config['drivers']['mysql'] ?? [];
+        $entityConfig = $config['entities'][$entityClass] ?? [];
+        $className = Str::snake(class_basename($entityClass));
+        $tableName = $entityConfig['audit_table'] ?? $entityConfig['table'] ?? Str::plural($className);
+        $tablePrefix = $driverConfig['table_prefix'] ?? 'audit_';
+        $tableSuffix = $driverConfig['table_suffix'] ?? '_logs';
 
-        $table = "{$tablePrefix}{$tableName}{$tableSuffix}";
+        if (! str_starts_with($tableName, $tablePrefix)) {
+            $tableName = "{$tablePrefix}{$tableName}";
+        }
+
+        if (! str_ends_with($tableName, $tableSuffix)) {
+            $tableName = "{$tableName}{$tableSuffix}";
+        }
 
         $instance = new self;
-        $instance->setTable($table);
+        $instance->setTable($tableName);
 
-        // Set the connection from config
-        $connection = $config['drivers']['mysql']['connection'] ?? config('database.default');
+        $connection = $driverConfig['connection'] ?? config('database.default');
         if ($connection) {
             $instance->setConnection($connection);
         }
