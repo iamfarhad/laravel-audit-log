@@ -3,39 +3,10 @@
 declare(strict_types=1);
 
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Audit Logging
-    |--------------------------------------------------------------------------
-    |
-    | This option controls whether audit logging is enabled globally. Set
-    | AUDIT_ENABLED=false to disable all audit writes, which is useful for
-    | test environments where audit tables are not required.
-    |
-    */
     'enabled' => env('AUDIT_ENABLED', true),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Audit Driver
-    |--------------------------------------------------------------------------
-    |
-    | This option controls the default audit driver that will be used to store
-    | audit logs.
-    |
-    | Supported: "mysql", "postgresql"
-    |
-    */
     'default' => env('AUDIT_DRIVER', 'mysql'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Audit Drivers
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure the audit drivers for your application.
-    |
-    */
     'drivers' => [
         'mysql' => [
             'connection' => env('AUDIT_MYSQL_CONNECTION', config('database.default')),
@@ -50,16 +21,6 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Queue Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configure whether audit logs should be processed asynchronously using
-    | Laravel's queue system. When enabled, audit logs will be dispatched
-    | to the specified queue for background processing.
-    |
-    */
     'queue' => [
         'enabled' => env('AUDIT_QUEUE_ENABLED', false),
         'connection' => env('AUDIT_QUEUE_CONNECTION', config('queue.default')),
@@ -67,26 +28,8 @@ return [
         'delay' => env('AUDIT_QUEUE_DELAY', 0),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Auto Migration
-    |--------------------------------------------------------------------------
-    |
-    | This option allows you to control whether audit tables are automatically
-    | created for new entity types when they are first logged.
-    |
-    */
     'auto_migration' => env('AUDIT_AUTO_MIGRATION', true),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Field Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configure which fields should be excluded from audit logging, and whether
-    | to include timestamps in the logged changes.
-    |
-    */
     'fields' => [
         'exclude' => [
             'password',
@@ -107,55 +50,42 @@ return [
             'trial_ends_at',
         ],
         'include_timestamps' => true,
+        'redact' => [],
+        'redaction_replacement' => env('AUDIT_REDACTION_REPLACEMENT', '[REDACTED]'),
+        'transformers' => [
+            // 'email' => \iamfarhad\LaravelAuditLog\Transformers\MaskEmailTransformer::class,
+            // 'phone' => \iamfarhad\LaravelAuditLog\Transformers\MaskValueTransformer::class,
+        ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Causer Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configure how the system detects and records the causer of audit events.
-    | This is usually the authenticated user, but can be customized.
-    |
-    */
+    'security' => [
+        'hashing' => [
+            'enabled' => env('AUDIT_HASH_CHAIN_ENABLED', false),
+            'algorithm' => env('AUDIT_HASH_ALGORITHM', 'sha256'),
+            'key' => env('AUDIT_HASH_KEY', env('APP_KEY')),
+        ],
+    ],
+
     'causer' => [
-        'guard' => null, // null means use default guard
-        'model' => null, // null means auto-detect
-        'resolver' => null, // custom resolver class
+        'guard' => null,
+        'model' => null,
+        'resolver' => null,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Retention Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configure automatic cleanup and retention policies for audit logs.
-    | You can set global defaults and override them per entity.
-    |
-    */
     'retention' => [
         'enabled' => env('AUDIT_RETENTION_ENABLED', false),
         'days' => env('AUDIT_RETENTION_DAYS', 365),
-        'strategy' => env('AUDIT_RETENTION_STRATEGY', 'delete'), // 'delete', 'archive', 'anonymize'
+        'strategy' => env('AUDIT_RETENTION_STRATEGY', 'delete'),
         'batch_size' => env('AUDIT_RETENTION_BATCH_SIZE', 1000),
         'anonymize_after_days' => env('AUDIT_ANONYMIZE_DAYS', 180),
         'archive_connection' => env('AUDIT_ARCHIVE_CONNECTION', null),
         'run_cleanup_automatically' => env('AUDIT_AUTO_CLEANUP', false),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Registered Entities
-    |--------------------------------------------------------------------------
-    |
-    | List of entities that should be audited. You can override retention
-    | settings per entity by adding a 'retention' key.
-    |
-    */
     'entities' => [
-        // Example:
         // \App\Models\User::class => [
         //     'table' => 'users',
+        //     'audit_table' => 'audit_users_logs',
         //     'exclude' => ['password'],
         //     'include' => ['*'],
         //     'retention' => [
