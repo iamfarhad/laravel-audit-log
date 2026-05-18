@@ -41,10 +41,17 @@ final class AuditDoctorCommand extends Command
             }
 
             $table = $tables->resolve($entityClass);
-            $exists = Schema::connection(config('database.default'))->hasTable($table);
+            $exists = Schema::connection($this->auditConnection())->hasTable($table);
             $exists ? $this->info("OK: {$table} exists for {$entityClass}") : $this->warn("Missing audit table [{$table}] for {$entityClass}");
         }
 
         return $failed ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function auditConnection(): string
+    {
+        $driver = (string) config('audit-logger.default', 'mysql');
+
+        return (string) config("audit-logger.drivers.{$driver}.connection", config('database.default'));
     }
 }
