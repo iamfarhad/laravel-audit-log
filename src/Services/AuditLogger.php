@@ -44,7 +44,11 @@ final class AuditLogger
             return;
         }
 
-        if ((bool) config('audit-logger.batch.enabled', false) && ! (bool) config('audit-logger.queue.enabled', false)) {
+        $canUseNativeBatch = (bool) config('audit-logger.batch.enabled', false)
+            && ! (bool) config('audit-logger.queue.enabled', false)
+            && ! app(AuditHash::class)->enabled();
+
+        if ($canUseNativeBatch) {
             foreach ($logs as $log) {
                 Event::dispatch(new AuditCreating($log));
             }
