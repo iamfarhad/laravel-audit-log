@@ -30,10 +30,11 @@ final class AuditLogger
 
         if ((bool) config('audit-logger.queue.enabled', false)) {
             ProcessAuditLogJob::dispatch($log, $this->driver);
-        } else {
-            ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
+
+            return;
         }
 
+        ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
         Event::dispatch(new AuditCreated($log));
     }
 
