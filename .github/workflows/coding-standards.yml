@@ -2,9 +2,9 @@ name: Coding Standards
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 env:
   COMPOSER_PROCESS_TIMEOUT: 0
@@ -13,18 +13,22 @@ env:
 
 jobs:
   phplint:
-      permissions:
-          contents: write
-      runs-on: ubuntu-latest
-      steps:
-          - uses: actions/checkout@v3
-          - name: "laravel-pint"
-            uses: aglipanci/laravel-pint-action@latest
-            with:
-                configPath: './pint.json'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
-          - name: Commit changes
-            uses: stefanzweifel/git-auto-commit-action@v4
-            with:
-                commit_message: PHP Linting (Pint)
-                skip_fetch: true
+      - name: Fix Laravel Pint style
+        uses: aglipanci/laravel-pint-action@latest
+        with:
+          configPath: './pint.json'
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: PHP Linting (Pint)
+          skip_fetch: true
+          branch: ${{ github.head_ref || github.ref_name }}

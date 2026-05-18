@@ -14,21 +14,16 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Run the migrations
         $this->setUpDatabase();
     }
 
     protected function getPackageProviders($app): array
     {
-        return [
-            AuditLoggerServiceProvider::class,
-        ];
+        return [AuditLoggerServiceProvider::class];
     }
 
     protected function getEnvironmentSetUp($app): void
     {
-        // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
             'driver' => 'sqlite',
@@ -36,25 +31,24 @@ abstract class TestCase extends Orchestra
             'prefix' => '',
         ]);
 
-        // Configure audit logger
         $app['config']->set('audit-logger.default', 'mysql');
         $app['config']->set('audit-logger.drivers.mysql.connection', 'testbench');
-
-        // Disable auto migration since we'll create the tables manually in setUpDatabase
+        $app['config']->set('audit-logger.drivers.postgresql.connection', 'testbench');
         $app['config']->set('audit-logger.auto_migration', false);
         $app['config']->set('audit-logger.batch.enabled', false);
-
-        // Set global excluded fields
+        $app['config']->set('audit-logger.security.hashing.enabled', false);
         $app['config']->set('audit-logger.fields.exclude', [
+            'password',
             'remember_token',
             'updated_at',
             'created_at',
         ]);
+        $app['config']->set('audit-logger.fields.redact', []);
+        $app['config']->set('audit-logger.fields.transformers', []);
     }
 
     protected function setUpDatabase(): void
     {
-        // Create users table
         Schema::connection('testbench')->create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -66,24 +60,17 @@ abstract class TestCase extends Orchestra
             $table->timestamps();
         });
 
-        // Create posts table
         Schema::connection('testbench')->create('posts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('content');
-            $table->string('status')->default('draft'); // draft, published, archived
+            $table->string('status')->default('draft');
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
 
-        // Create model-specific audit tables
-        $auditTables = [
-            'audit_users_logs',
-            'audit_posts_logs',
-        ];
-
-        foreach ($auditTables as $tableName) {
+        foreach (['audit_users_logs', 'audit_posts_logs'] as $tableName) {
             Schema::connection('testbench')->create($tableName, function (Blueprint $table) {
                 $table->id();
                 $table->string('entity_id');
@@ -95,10 +82,14 @@ abstract class TestCase extends Orchestra
                 $table->json('metadata')->nullable();
                 $table->timestamp('created_at');
                 $table->string('source')->nullable();
-
+                $table->string('audit_hash', 128)->nullable();
+                $table->string('previous_hash', 128)->nullable();
+                $table->timestamp('anonymized_at')->nullable();
                 $table->index('entity_id');
                 $table->index(['causer_type', 'causer_id']);
                 $table->index('created_at');
+                $table->index('audit_hash');
+                $table->index('previous_hash');
             });
         }
     }
