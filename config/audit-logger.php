@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'enabled' => env('AUDIT_ENABLED', true),
 
+    'preset' => env('AUDIT_PRESET', 'basic'),
+
     'default' => env('AUDIT_DRIVER', 'mysql'),
 
     'drivers' => [
@@ -26,6 +28,11 @@ return [
         'connection' => env('AUDIT_QUEUE_CONNECTION', config('queue.default')),
         'queue_name' => env('AUDIT_QUEUE_NAME', 'audit'),
         'delay' => env('AUDIT_QUEUE_DELAY', 0),
+    ],
+
+    'batch' => [
+        'enabled' => env('AUDIT_BATCH_ENABLED', false),
+        'size' => env('AUDIT_BATCH_SIZE', 500),
     ],
 
     'auto_migration' => env('AUDIT_AUTO_MIGRATION', true),
@@ -59,11 +66,42 @@ return [
     ],
 
     'security' => [
+        'append_only' => env('AUDIT_APPEND_ONLY', false),
         'hashing' => [
             'enabled' => env('AUDIT_HASH_CHAIN_ENABLED', false),
             'algorithm' => env('AUDIT_HASH_ALGORITHM', 'sha256'),
             'key' => env('AUDIT_HASH_KEY', env('APP_KEY')),
         ],
+    ],
+
+    'tenant' => [
+        'enabled' => env('AUDIT_TENANT_ENABLED', false),
+        'resolver' => \iamfarhad\LaravelAuditLog\Services\TenantResolver::class,
+        'columns' => [
+            'type' => 'tenant_type',
+            'id' => 'tenant_id',
+        ],
+    ],
+
+    'authorization' => [
+        'enabled' => env('AUDIT_AUTHORIZATION_ENABLED', false),
+        'view_gate' => 'viewAuditLogs',
+        'restore_gate' => 'restoreFromAudit',
+    ],
+
+    'changes' => [
+        'store' => env('AUDIT_STORE_CHANGES', false),
+        'column' => 'changes',
+    ],
+
+    'snapshots' => [
+        'enabled' => env('AUDIT_SNAPSHOTS_ENABLED', false),
+        'every' => env('AUDIT_SNAPSHOT_EVERY', 20),
+    ],
+
+    'restore' => [
+        'validate_fillable' => env('AUDIT_RESTORE_VALIDATE_FILLABLE', false),
+        'audit_restores' => env('AUDIT_RESTORE_AUDIT', true),
     ],
 
     'causer' => [
@@ -88,6 +126,7 @@ return [
         //     'audit_table' => 'audit_users_logs',
         //     'exclude' => ['password'],
         //     'include' => ['*'],
+        //     'relations' => ['roles', 'permissions'],
         //     'retention' => [
         //         'days' => 730,
         //         'strategy' => 'anonymize',

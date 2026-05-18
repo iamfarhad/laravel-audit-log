@@ -8,9 +8,12 @@ use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
 use iamfarhad\LaravelAuditLog\Drivers\MySQLDriver;
 use iamfarhad\LaravelAuditLog\Drivers\PostgreSQLDriver;
+use iamfarhad\LaravelAuditLog\Events\AuditCreated;
+use iamfarhad\LaravelAuditLog\Events\AuditCreating;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogJob;
 use iamfarhad\LaravelAuditLog\Jobs\ProcessAuditLogSyncJob;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Request;
 
 final class AuditLogger
@@ -23,26 +26,45 @@ final class AuditLogger
             return;
         }
 
+        Event::dispatch(new AuditCreating($log));
+
         if ((bool) config('audit-logger.queue.enabled', false)) {
             ProcessAuditLogJob::dispatch($log, $this->driver);
-        } else {
-            ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
+
+            return;
         }
+
+        ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
+        Event::dispatch(new AuditCreated($log));
     }
 
     /** @param array<AuditLogInterface> $logs */
     public function batch(array $logs): void
     {
-        if (! (bool) config('audit-logger.enabled', true)) {
+        if (! (bool) config('audit-logger.enabled', true) || $logs === []) {
+            return;
+        }
+
+        $canUseNativeBatch = (bool) config('audit-logger.batch.enabled', false)
+            && ! (bool) config('audit-logger.queue.enabled', false)
+            && ! app(AuditHash::class)->enabled();
+
+        if ($canUseNativeBatch) {
+            foreach ($logs as $log) {
+                Event::dispatch(new AuditCreating($log));
+            }
+
+            $this->driver->storeBatch($logs);
+
+            foreach ($logs as $log) {
+                Event::dispatch(new AuditCreated($log));
+            }
+
             return;
         }
 
         foreach ($logs as $log) {
-            if ((bool) config('audit-logger.queue.enabled', false)) {
-                ProcessAuditLogJob::dispatch($log, $this->driver);
-            } else {
-                ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
-            }
+            $this->log($log);
         }
     }
 

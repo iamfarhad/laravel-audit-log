@@ -17,8 +17,11 @@ final class EloquentAuditLog extends Model
         'action',
         'old_values',
         'new_values',
+        'changes',
         'causer_type',
         'causer_id',
+        'tenant_type',
+        'tenant_id',
         'metadata',
         'created_at',
         'source',
@@ -29,8 +32,19 @@ final class EloquentAuditLog extends Model
     protected $casts = [
         'old_values' => 'json',
         'new_values' => 'json',
+        'changes' => 'array',
         'metadata' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        if (! (bool) config('audit-logger.security.append_only', false)) {
+            return;
+        }
+
+        static::updating(fn (): bool => false);
+        static::deleting(fn (): bool => false);
+    }
 
     public function getConnectionName(): ?string
     {
@@ -50,6 +64,11 @@ final class EloquentAuditLog extends Model
         return $this->morphTo();
     }
 
+    public function tenant()
+    {
+        return $this->morphTo(__FUNCTION__, 'tenant_type', 'tenant_id');
+    }
+
     public function scopeForEntity(Builder $query, $entityClass): Builder
     {
         return $query;
@@ -63,6 +82,17 @@ final class EloquentAuditLog extends Model
     public function scopeForAction(Builder $query, $action): Builder
     {
         return is_array($action) ? $query->whereIn('action', $action) : $query->where('action', $action);
+    }
+
+    public function scopeForTenant(Builder $query, string|int $tenantId, ?string $tenantType = null): Builder
+    {
+        $query->where('tenant_id', (string) $tenantId);
+
+        if ($tenantType !== null) {
+            $query->where('tenant_type', $tenantType);
+        }
+
+        return $query;
     }
 
     public function scopeForCauser(Builder $query, $causerClass): Builder
@@ -167,21 +197,12 @@ final class EloquentAuditLog extends Model
 
     public static function forEntity(string $entityClass): static
     {
+        $instance = new self;
+        $instance->setTable(app(\iamfarhad\LaravelAuditLog\Services\AuditTableNameResolver::class)->resolve($entityClass));
+
         $config = config('audit-logger');
         $driverName = $config['default'] ?? 'mysql';
         $driverConfig = $config['drivers'][$driverName] ?? $config['drivers']['mysql'] ?? [];
-        $entityConfig = $config['entities'][$entityClass] ?? [];
-        $tableName = $entityConfig['audit_table'] ?? $entityConfig['table'] ?? null;
-
-        if ($tableName === null) {
-            $tablePrefix = $driverConfig['table_prefix'] ?? 'audit_';
-            $tableSuffix = $driverConfig['table_suffix'] ?? '_logs';
-            $tableName = $tablePrefix.Str::plural(Str::snake(class_basename($entityClass))).$tableSuffix;
-        }
-
-        $instance = new self;
-        $instance->setTable($tableName);
-
         $connection = $driverConfig['connection'] ?? config('database.default');
         if ($connection) {
             $instance->setConnection($connection);
