@@ -35,8 +35,13 @@ final class AuditMigrateCommand extends Command
                 return self::FAILURE;
             }
 
-            $driver->ensureStorageExists($entityClass);
-            $this->info("Audit storage is ready for {$entityClass}.");
+            if ($driver->storageExistsForEntity($entityClass)) {
+                $this->info("Audit storage already exists for {$entityClass}.");
+                continue;
+            }
+
+            $driver->createStorageForEntity($entityClass);
+            $this->info("Created audit storage for {$entityClass}.");
         }
 
         return self::SUCCESS;
