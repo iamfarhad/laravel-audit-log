@@ -7,6 +7,7 @@ namespace iamfarhad\LaravelAuditLog;
 use iamfarhad\LaravelAuditLog\Console\Commands\AuditConfigCheckCommand;
 use iamfarhad\LaravelAuditLog\Console\Commands\AuditDiffCommand;
 use iamfarhad\LaravelAuditLog\Console\Commands\AuditDoctorCommand;
+use iamfarhad\LaravelAuditLog\Console\Commands\AuditMigrateCommand;
 use iamfarhad\LaravelAuditLog\Console\Commands\AuditPartitionCommand;
 use iamfarhad\LaravelAuditLog\Console\Commands\AuditStatsCommand;
 use iamfarhad\LaravelAuditLog\Console\Commands\AuditTimelineCommand;
@@ -105,6 +106,7 @@ final class AuditLoggerServiceProvider extends ServiceProvider
                 AuditConfigCheckCommand::class,
                 AuditDiffCommand::class,
                 AuditDoctorCommand::class,
+                AuditMigrateCommand::class,
                 AuditPartitionCommand::class,
                 AuditStatsCommand::class,
                 AuditTimelineCommand::class,
