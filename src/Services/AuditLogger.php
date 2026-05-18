@@ -33,16 +33,18 @@ final class AuditLogger
     /** @param array<AuditLogInterface> $logs */
     public function batch(array $logs): void
     {
-        if (! (bool) config('audit-logger.enabled', true)) {
+        if (! (bool) config('audit-logger.enabled', true) || $logs === []) {
+            return;
+        }
+
+        if ((bool) config('audit-logger.batch.enabled', false) && ! (bool) config('audit-logger.queue.enabled', false)) {
+            $this->driver->storeBatch($logs);
+
             return;
         }
 
         foreach ($logs as $log) {
-            if ((bool) config('audit-logger.queue.enabled', false)) {
-                ProcessAuditLogJob::dispatch($log, $this->driver);
-            } else {
-                ProcessAuditLogSyncJob::dispatchSync($log, $this->driver);
-            }
+            $this->log($log);
         }
     }
 
