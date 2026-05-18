@@ -24,11 +24,12 @@ final class AuditUpgradeCommand extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $entities = array_keys((array) config('audit-logger.entities', []));
+        $schema = Schema::connection($this->auditConnection());
 
         foreach ($entities as $entityClass) {
             $tableName = $tables->resolve($entityClass);
 
-            if (! Schema::hasTable($tableName)) {
+            if (! $schema->hasTable($tableName)) {
                 $this->warn("Missing audit table [{$tableName}].");
                 continue;
             }
@@ -39,7 +40,7 @@ final class AuditUpgradeCommand extends Command
                 'tenant_type',
                 'tenant_id',
                 'changes',
-            ], fn (string $column): bool => ! Schema::hasColumn($tableName, $column)));
+            ], fn (string $column): bool => ! $schema->hasColumn($tableName, $column)));
 
             if ($missing === []) {
                 $this->info("{$tableName}: already v2-ready.");
@@ -54,5 +55,12 @@ final class AuditUpgradeCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function auditConnection(): string
+    {
+        $driver = (string) config('audit-logger.default', 'mysql');
+
+        return (string) config("audit-logger.drivers.{$driver}.connection", config('database.default'));
     }
 }
