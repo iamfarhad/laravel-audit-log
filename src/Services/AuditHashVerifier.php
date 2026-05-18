@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace iamfarhad\LaravelAuditLog\Services;
 
 use iamfarhad\LaravelAuditLog\DTOs\AuditLog;
+use iamfarhad\LaravelAuditLog\Events\AuditVerificationFailed;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
@@ -21,14 +23,14 @@ final class AuditHashVerifier
         $table = $model->getTable();
 
         if (! Schema::connection($connection)->hasTable($table)) {
-            return $this->failure('missing_audit_table', "Audit table [{$table}] does not exist.");
+            return $this->failed($entityClass, $this->failure('missing_audit_table', "Audit table [{$table}] does not exist."));
         }
 
         if (! Schema::connection($connection)->hasColumn($table, 'audit_hash') || ! Schema::connection($connection)->hasColumn($table, 'previous_hash')) {
-            return $this->failure(
+            return $this->failed($entityClass, $this->failure(
                 'missing_hash_columns',
                 "Audit table [{$table}] must have nullable [audit_hash] and [previous_hash] columns before hash-chain verification can run."
-            );
+            ));
         }
 
         $previousHash = null;
@@ -72,10 +74,12 @@ final class AuditHashVerifier
                 $previousHash = $log->audit_hash ?? null;
             }
         } catch (Throwable $exception) {
-            return $this->failure('verification_query_failed', $exception->getMessage());
+            return $this->failed($entityClass, $this->failure('verification_query_failed', $exception->getMessage()));
         }
 
-        return ['valid' => $failures === [], 'checked' => $checked, 'failures' => $failures];
+        $result = ['valid' => $failures === [], 'checked' => $checked, 'failures' => $failures];
+
+        return $failures === [] ? $result : $this->failed($entityClass, $result);
     }
 
     /** @return array{valid: false, checked: 0, failures: array<int, array<string, string>>} */
@@ -88,5 +92,13 @@ final class AuditHashVerifier
                 ['code' => $code, 'message' => $message],
             ],
         ];
+    }
+
+    /** @param array{valid: bool, checked: int, failures: array<int, array<string, mixed>>} $result */
+    private function failed(string $entityClass, array $result): array
+    {
+        Event::dispatch(new AuditVerificationFailed($entityClass, $result['failures']));
+
+        return $result;
     }
 }
