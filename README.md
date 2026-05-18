@@ -6,61 +6,70 @@
 [![Laravel Version](https://img.shields.io/badge/Laravel-10.x%7C11.x%7C12.x%7C13.x-red.svg?style=flat-square)](https://laravel.com/)
 [![License](https://img.shields.io/packagist/l/iamfarhad/laravel-audit-log.svg?style=flat-square)](https://packagist.org/packages/iamfarhad/laravel-audit-log)
 
-**Laravel Audit Logger** is a high-performance, compliance-ready audit logging package for Laravel applications. It tracks Eloquent model changes with entity-specific audit tables, source tracking, queue support, retention policies, timeline/diff APIs, restore/replay helpers, field redaction, and optional tamper-evident hash chains.
+**Laravel Audit Logger** is a compliance-ready audit trail package for Laravel. It stores model changes in dedicated audit tables, supports searchable timelines and diffs, provides restore/replay helpers, protects sensitive fields, and can verify tamper-evident hash chains.
 
-The package is designed for serious audit trails in SaaS, ecommerce, admin panels, financial systems, and enterprise Laravel apps where audit data must be searchable, understandable, and trustworthy.
+The v2 infrastructure adds production migration tooling, native batch inserts, multi-tenancy, append-only audit rows, relationship auditing helpers, operational Artisan commands, API resources, authorization helpers, snapshots, and lifecycle events.
+
+Use it when audit data is more than a simple activity feed: SaaS platforms, marketplaces, fintech/admin systems, back-office tools, enterprise applications, and any Laravel app where changes must be explainable, searchable, and trustworthy.
 
 ## Table of Contents
 
-- [Features](#features)
-- [Why Laravel Audit Logger?](#why-laravel-audit-logger)
+- [Highlights](#highlights)
+- [Why this package?](#why-this-package)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
-- [Advanced Features](#advanced-features)
-  - [Audit Search](#audit-search)
-  - [Analytics](#analytics)
-  - [Timeline and Diff API](#timeline-and-diff-api)
-  - [Restore, Replay, and Rollback](#restore-replay-and-rollback)
-  - [Tamper-Evident Hash Chain](#tamper-evident-hash-chain)
-  - [Field Redaction and Transformers](#field-redaction-and-transformers)
-  - [Source Tracking](#source-tracking)
-  - [Queue Processing](#queue-processing)
-  - [Retention Policies](#retention-policies)
+- [Production Table Management](#production-table-management)
+- [Search, Analytics, Timeline, and Diff](#search-analytics-timeline-and-diff)
+- [Restore, Replay, and Rollback](#restore-replay-and-rollback)
+- [Security and Integrity](#security-and-integrity)
+- [Privacy: Redaction and Transformers](#privacy-redaction-and-transformers)
+- [Multi-Tenancy](#multi-tenancy)
+- [Batch Inserts](#batch-inserts)
+- [Relationship Auditing](#relationship-auditing)
+- [Snapshots](#snapshots)
+- [API Resources](#api-resources)
+- [Operational Commands](#operational-commands)
+- [Retention Policies](#retention-policies)
+- [Events](#events)
+- [Upgrade Notes](#upgrade-notes)
 - [Comparison](#comparison)
 - [Testing](#testing)
-- [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Features
+## Highlights
 
-- **Entity-specific audit tables**: Stores each model's audit trail in a dedicated table such as `audit_orders_logs` for faster querying and simpler retention.
-- **CRUD and restore tracking**: Captures `created`, `updated`, `deleted`, and `restored` model events.
-- **Old/new value storage**: Stores before-and-after values in JSON/JSONB columns.
-- **Source tracking**: Records whether the change came from an HTTP controller, Artisan command, queue worker, or background job context.
-- **User/causer tracking**: Resolves the authenticated user with configurable guard/model/resolver support.
-- **Audit search API**: Search audit rows across entity id, action, source, causer, metadata, and changed values.
-- **Analytics helpers**: Summary counts, top actions, top causers, top changed entities, and changes per day.
-- **Timeline and diff API**: Generate presentation-friendly audit timelines and field-level diffs for admin panels.
-- **Restore/replay API**: Restore a model from a previous audit entry or roll it back to old values.
-- **Tamper-evident hash chain**: Optional HMAC chain using `audit_hash` and `previous_hash` to detect audit row tampering.
-- **Field redaction and transformers**: Mask, hash, redact, or normalize sensitive values before they are stored.
-- **Queue support**: Run audit writes synchronously or asynchronously.
-- **Retention policies**: Delete, anonymize, or archive old audit logs globally or per model.
-- **MySQL and PostgreSQL drivers**: MySQL uses JSON columns; PostgreSQL uses JSONB columns.
-- **Modern Laravel support**: Laravel 10, 11, 12, and 13 with PHP 8.1+.
+- **Entity-specific audit tables**: Store each model's audit history in its own table, such as `audit_orders_logs`.
+- **Automatic model auditing**: Capture created, updated, deleted, restored, and custom relationship audit actions.
+- **Searchable audit trails**: Search by action, source, causer, entity id, metadata, old values, and new values.
+- **Analytics helpers**: Build dashboards with summaries, top actions, top causers, changed entities, and daily activity.
+- **Timeline and diff APIs**: Render admin-friendly history views and field-level changes.
+- **Restore/replay/rollback APIs**: Restore a model from audit history or preview changes before saving.
+- **Tamper-evident hash chain**: Optional HMAC chain using `audit_hash` and `previous_hash`.
+- **Append-only mode**: Prevent Eloquent updates and deletes on audit log rows.
+- **Privacy controls**: Exclude, redact, mask, hash, or transform sensitive fields before storage.
+- **Production migration tooling**: Generate and create audit tables with Artisan commands.
+- **Multi-tenancy**: Store tenant context on every audit row when enabled.
+- **Native batch inserts**: Insert large audit batches efficiently when queueing and hash-chain mode are off.
+- **Relationship auditing**: Explicit helpers for attach, detach, and sync workflows.
+- **API resources**: Consistent JSON resources for audit logs, timelines, and diffs.
+- **Operational commands**: Doctor checks, config validation, stats, timeline, diff, verify, upgrade, and partition guidance.
+- **MySQL and PostgreSQL support**: JSON for MySQL and JSONB for PostgreSQL.
 
-## Why Laravel Audit Logger?
+## Why this package?
 
-Most Laravel logging packages are optimized for general activity feeds. This package is optimized for audit infrastructure:
+Most Laravel activity packages are optimized for feeds. Laravel Audit Logger is optimized for **audit infrastructure**:
 
-- dedicated audit tables per entity for performance and isolation;
-- strong compliance features such as retention, anonymization, and hash-chain verification;
-- ergonomic APIs for searching, timeline rendering, diffs, and rollback workflows;
-- clean extension points for custom causer resolvers, storage drivers, metadata, and field transformers.
+- dedicated audit tables improve isolation and long-term query performance;
+- source tracking explains where a change came from;
+- restore and rollback APIs support operational recovery workflows;
+- hash-chain verification helps detect tampering;
+- v2 commands help production teams validate, migrate, inspect, and operate audit tables;
+- sensitive data controls reduce accidental PII or secret exposure.
 
 ## Requirements
 
@@ -114,13 +123,15 @@ final class Order extends Model
 }
 ```
 
-The package will automatically log model changes into a table such as:
+After that, create/update/delete/restore operations are recorded automatically.
+
+By default, the package stores order audit rows in:
 
 ```text
 audit_orders_logs
 ```
 
-Example audit row:
+A typical audit row contains:
 
 ```php
 [
@@ -137,13 +148,14 @@ Example audit row:
 
 ## Configuration
 
-A typical configuration looks like this:
+A compact configuration example:
 
 ```php
 return [
     'enabled' => env('AUDIT_ENABLED', true),
-
+    'preset' => env('AUDIT_PRESET', 'basic'),
     'default' => env('AUDIT_DRIVER', 'mysql'),
+    'auto_migration' => env('AUDIT_AUTO_MIGRATION', true),
 
     'drivers' => [
         'mysql' => [
@@ -151,7 +163,6 @@ return [
             'table_prefix' => env('AUDIT_TABLE_PREFIX', 'audit_'),
             'table_suffix' => env('AUDIT_TABLE_SUFFIX', '_logs'),
         ],
-
         'postgresql' => [
             'connection' => env('AUDIT_PGSQL_CONNECTION', config('database.default')),
             'table_prefix' => env('AUDIT_TABLE_PREFIX', 'audit_'),
@@ -166,28 +177,13 @@ return [
         'delay' => env('AUDIT_QUEUE_DELAY', 0),
     ],
 
-    'auto_migration' => env('AUDIT_AUTO_MIGRATION', true),
-
-    'fields' => [
-        'exclude' => [
-            'password',
-            'remember_token',
-            'api_token',
-            'secret',
-            'token',
-            'private_key',
-            'access_token',
-            'refresh_token',
-            'api_key',
-            'secret_key',
-        ],
-        'include_timestamps' => true,
-        'redact' => [],
-        'redaction_replacement' => env('AUDIT_REDACTION_REPLACEMENT', '[REDACTED]'),
-        'transformers' => [],
+    'batch' => [
+        'enabled' => env('AUDIT_BATCH_ENABLED', false),
+        'size' => env('AUDIT_BATCH_SIZE', 500),
     ],
 
     'security' => [
+        'append_only' => env('AUDIT_APPEND_ONLY', false),
         'hashing' => [
             'enabled' => env('AUDIT_HASH_CHAIN_ENABLED', false),
             'algorithm' => env('AUDIT_HASH_ALGORITHM', 'sha256'),
@@ -195,21 +191,82 @@ return [
         ],
     ],
 
-    'causer' => [
-        'guard' => null,
-        'model' => null,
-        'resolver' => null,
+    'tenant' => [
+        'enabled' => env('AUDIT_TENANT_ENABLED', false),
+        'resolver' => \iamfarhad\LaravelAuditLog\Services\TenantResolver::class,
+        'columns' => ['type' => 'tenant_type', 'id' => 'tenant_id'],
+    ],
+
+    'fields' => [
+        'exclude' => ['password', 'remember_token', 'api_token', 'secret', 'token'],
+        'include_timestamps' => true,
+        'redact' => [],
+        'redaction_replacement' => env('AUDIT_REDACTION_REPLACEMENT', '[REDACTED]'),
+        'transformers' => [],
+    ],
+
+    'entities' => [
+        // App\Models\Order::class => [
+        //     'audit_table' => 'audit_orders_logs',
+        //     'exclude' => ['internal_notes'],
+        //     'relations' => ['items', 'tags'],
+        // ],
     ],
 ];
 ```
 
-## Advanced Features
+## Production Table Management
 
-For the full advanced guide, see [`docs/advanced-audit-features.md`](docs/advanced-audit-features.md).
+Runtime auto-migration is convenient for local development. Production apps should prefer generated migrations or explicit table creation.
 
-### Audit Search
+Generate a migration for one audited model:
 
-Search audit logs with a fluent query API:
+```bash
+php artisan audit:make-migration App\Models\Order
+```
+
+Create audit tables for all configured entities:
+
+```bash
+php artisan audit:migrate
+```
+
+Create storage for one entity:
+
+```bash
+php artisan audit:migrate --entity=App\Models\Order
+```
+
+Disable runtime auto-migration in production after your migrations are deployed:
+
+```env
+AUDIT_AUTO_MIGRATION=false
+```
+
+The v2 audit table shape includes optional support columns:
+
+```text
+id
+entity_id
+action
+old_values
+new_values
+changes
+causer_type
+causer_id
+tenant_type
+tenant_id
+metadata
+created_at
+source
+audit_hash
+previous_hash
+anonymized_at
+```
+
+## Search, Analytics, Timeline, and Diff
+
+### Search
 
 ```php
 use iamfarhad\LaravelAuditLog\Facades\AuditLogger;
@@ -240,17 +297,13 @@ $topChangedEntities = AuditLogger::analytics()->topChangedEntities(App\Models\Or
 $changesPerDay = AuditLogger::analytics()->changesPerDay(App\Models\Order::class, 30);
 ```
 
-### Timeline and Diff API
-
-Every auditable model can expose a timeline and field-level diff:
+### Timeline
 
 ```php
 $timeline = $order->auditTimeline();
-$latestDiff = $order->auditDiff();
-$specificDiff = $order->auditDiff($auditLogId);
 ```
 
-A timeline entry includes:
+Timeline entries are suitable for admin panels:
 
 ```php
 [
@@ -264,35 +317,60 @@ A timeline entry includes:
     'changes' => [
         ['field' => 'status', 'old' => 'pending', 'new' => 'approved'],
     ],
-    'metadata' => [],
-    'audit_hash' => '...',
-    'previous_hash' => '...',
 ]
 ```
 
-### Restore, Replay, and Rollback
+### Diff
 
-Replay the new values from an audit log:
+```php
+$latestDiff = $order->auditDiff();
+$specificDiff = $order->auditDiff($auditLogId);
+```
+
+## Restore, Replay, and Rollback
+
+Restore/replay new values from an audit log:
 
 ```php
 $order->restoreFromAudit($auditLogId);
 ```
 
-Rollback to the old values captured by an audit log:
+Rollback to old values:
 
 ```php
 $order->rollbackToAudit($auditLogId);
 ```
 
-Preview a restore/rollback before saving:
+Preview before saving:
 
 ```php
 $preview = $order->previewRestore($auditLogId, 'rollback');
 ```
 
-### Tamper-Evident Hash Chain
+Restore safety options:
 
-Enable hash-chain verification:
+```env
+AUDIT_RESTORE_VALIDATE_FILLABLE=true
+AUDIT_RESTORE_AUDIT=true
+```
+
+- `AUDIT_RESTORE_VALIDATE_FILLABLE=true` only applies fields listed in the model's `$fillable` array.
+- `AUDIT_RESTORE_AUDIT=false` saves the restored model without creating another audit row.
+- Authorization can be enabled with `AUDIT_AUTHORIZATION_ENABLED=true`.
+
+## Security and Integrity
+
+### Append-only mode
+
+```env
+AUDIT_APPEND_ONLY=true
+```
+
+When enabled, Eloquent update/delete operations on `EloquentAuditLog` are blocked.
+
+### Hash-chain mode
+
+Hash-chain mode is disabled by default and must be enabled explicitly:
 
 ```env
 AUDIT_HASH_CHAIN_ENABLED=true
@@ -302,10 +380,10 @@ AUDIT_HASH_KEY=your-private-audit-key
 
 When enabled, every audit row stores:
 
-- `previous_hash`: the previous audit row hash for the same audit table;
-- `audit_hash`: an HMAC of the canonical audit payload plus `previous_hash`.
+- `previous_hash`: previous row hash in the same audit table;
+- `audit_hash`: HMAC of the canonical audit payload plus `previous_hash`.
 
-Verify an audit chain:
+Verify a chain:
 
 ```php
 $result = AuditLogger::verifyHashChain(App\Models\Order::class);
@@ -315,9 +393,27 @@ if (! $result['valid']) {
 }
 ```
 
-### Field Redaction and Transformers
+Or use Artisan:
 
-Redact sensitive fields with a fixed replacement:
+```bash
+php artisan audit:verify App\Models\Order
+php artisan audit:verify App\Models\Order --entity-id=123
+php artisan audit:verify App\Models\Order --fail-on-missing-hash
+```
+
+Native batch inserts are automatically skipped when hash-chain mode is enabled, because each row must be chained sequentially.
+
+## Privacy: Redaction and Transformers
+
+Exclude fields completely:
+
+```php
+'fields' => [
+    'exclude' => ['password', 'remember_token', 'api_token'],
+],
+```
+
+Redact fields with a fixed replacement:
 
 ```php
 'fields' => [
@@ -326,7 +422,7 @@ Redact sensitive fields with a fixed replacement:
 ],
 ```
 
-Transform fields before storage:
+Transform values before storage:
 
 ```php
 'fields' => [
@@ -338,7 +434,7 @@ Transform fields before storage:
 ],
 ```
 
-Create a custom transformer:
+Custom transformer:
 
 ```php
 <?php
@@ -359,43 +455,181 @@ final class MoneyTransformer implements FieldTransformerInterface
 }
 ```
 
-### Source Tracking
+## Multi-Tenancy
 
-The package automatically records where a change came from:
-
-- HTTP controller action, such as `App\Http\Controllers\OrderController@update`
-- Artisan command, such as `orders:process`
-- Queue/background job context when available
-
-Use source scopes:
-
-```php
-$httpLogs = EloquentAuditLog::forEntity(Order::class)->fromHttp()->get();
-$consoleLogs = EloquentAuditLog::forEntity(Order::class)->fromConsole()->get();
-$commandLogs = EloquentAuditLog::forEntity(Order::class)->fromCommand('orders:process')->get();
-```
-
-### Queue Processing
-
-Enable queue processing:
+Enable tenant context:
 
 ```env
-AUDIT_QUEUE_ENABLED=true
-AUDIT_QUEUE_CONNECTION=redis
-AUDIT_QUEUE_NAME=audit
+AUDIT_TENANT_ENABLED=true
 ```
 
-Run an audit worker:
-
-```bash
-php artisan queue:work --queue=audit --tries=3 --timeout=60
-```
-
-### Retention Policies
-
-The package supports delete, anonymize, and archive strategies:
+Create a resolver:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Audit;
+
+use iamfarhad\LaravelAuditLog\Contracts\TenantResolverInterface;
+
+final class CurrentTenantResolver implements TenantResolverInterface
+{
+    public function resolve(): array
+    {
+        $tenant = tenant();
+
+        return [
+            'type' => $tenant?->getMorphClass(),
+            'id' => $tenant?->getKey(),
+        ];
+    }
+}
+```
+
+Configure it:
+
+```php
+'tenant' => [
+    'enabled' => true,
+    'resolver' => App\Audit\CurrentTenantResolver::class,
+    'columns' => [
+        'type' => 'tenant_type',
+        'id' => 'tenant_id',
+    ],
+],
+```
+
+Query by tenant:
+
+```php
+$logs = EloquentAuditLog::forEntity(Order::class)
+    ->forTenant($tenant->id, $tenant::class)
+    ->latest()
+    ->get();
+```
+
+## Batch Inserts
+
+Batch mode is useful for imports, backfills, and high-volume programmatic audit creation.
+
+```env
+AUDIT_BATCH_ENABLED=true
+AUDIT_BATCH_SIZE=500
+AUDIT_QUEUE_ENABLED=false
+```
+
+```php
+AuditLogger::batch([
+    AuditLog::fromArray([...]),
+    AuditLog::fromArray([...]),
+]);
+```
+
+Rules:
+
+- native batch mode only runs when queueing is disabled;
+- native batch mode is skipped when hash-chain mode is enabled;
+- rows are grouped by audit table and inserted in chunks.
+
+## Relationship Auditing
+
+The package provides explicit helpers for relation changes. It does not monkey-patch Laravel relationship methods.
+
+```php
+use iamfarhad\LaravelAuditLog\Services\RelationshipAuditor;
+
+app(RelationshipAuditor::class)->attached($user, 'roles', [$roleId]);
+app(RelationshipAuditor::class)->detached($user, 'roles', [$roleId]);
+app(RelationshipAuditor::class)->synced($user, 'roles', $roleIds);
+```
+
+Example actions:
+
+```text
+roles_attached
+roles_detached
+roles_synced
+```
+
+## Snapshots
+
+Snapshots let you periodically store a full model state for faster reconstruction.
+
+```env
+AUDIT_SNAPSHOTS_ENABLED=true
+AUDIT_SNAPSHOT_EVERY=20
+```
+
+Manual snapshot:
+
+```php
+app(\iamfarhad\LaravelAuditLog\Services\AuditSnapshotService::class)->snapshot($order);
+```
+
+Automatic snapshot helper:
+
+```php
+app(\iamfarhad\LaravelAuditLog\Services\AuditSnapshotService::class)->maybeSnapshot($order);
+```
+
+Snapshot rows use action:
+
+```text
+snapshot
+```
+
+## API Resources
+
+Use resources to expose audit data from your own controllers:
+
+```php
+use iamfarhad\LaravelAuditLog\Http\Resources\AuditLogResource;
+use iamfarhad\LaravelAuditLog\Http\Resources\AuditTimelineResource;
+use iamfarhad\LaravelAuditLog\Http\Resources\AuditDiffResource;
+
+return AuditLogResource::collection(
+    AuditLogger::query(Order::class)->latest()->paginate()
+);
+```
+
+Timeline and diff resources are available for UI/API responses:
+
+```php
+return AuditTimelineResource::collection($order->auditTimeline());
+return AuditDiffResource::collection($order->auditDiff($auditLogId));
+```
+
+## Operational Commands
+
+| Command | Purpose |
+|---|---|
+| `audit:make-migration App\Models\Order` | Generate a production audit table migration |
+| `audit:migrate` | Create audit storage for configured entities |
+| `audit:migrate --entity=App\Models\Order` | Create storage for one entity |
+| `audit:config-check` | Validate audit config, transformers, resolver, and hash settings |
+| `audit:doctor` | Check configured entities and audit tables |
+| `audit:stats App\Models\Order` | Show summary statistics |
+| `audit:timeline App\Models\Order 123` | Print timeline rows for one entity id |
+| `audit:diff App\Models\Order 456` | Print field-level changes for one audit row |
+| `audit:verify App\Models\Order` | Verify hash-chain integrity |
+| `audit:partition audit_orders_logs --monthly` | Show partitioning guidance |
+| `audit:upgrade v1-to-v2 --dry-run` | Report missing v2 columns |
+| `audit:cleanup --dry-run` | Preview retention cleanup |
+
+## Retention Policies
+
+Configure global or per-entity retention.
+
+```php
+'retention' => [
+    'enabled' => env('AUDIT_RETENTION_ENABLED', false),
+    'days' => env('AUDIT_RETENTION_DAYS', 365),
+    'strategy' => env('AUDIT_RETENTION_STRATEGY', 'delete'),
+    'batch_size' => env('AUDIT_RETENTION_BATCH_SIZE', 1000),
+],
+
 'entities' => [
     App\Models\User::class => [
         'retention' => [
@@ -408,12 +642,77 @@ The package supports delete, anonymize, and archive strategies:
 ],
 ```
 
-Run cleanup manually:
+Run cleanup:
 
 ```bash
 php artisan audit:cleanup --dry-run
 php artisan audit:cleanup --force
 ```
+
+## Events
+
+Listen to lifecycle events:
+
+```php
+use iamfarhad\LaravelAuditLog\Events\AuditCreated;
+use iamfarhad\LaravelAuditLog\Events\AuditCreating;
+use iamfarhad\LaravelAuditLog\Events\AuditVerificationFailed;
+
+Event::listen(AuditCreated::class, function (AuditCreated $event) {
+    // Send to internal security pipeline, metrics, or notifications.
+});
+```
+
+Available events:
+
+- `AuditCreating`
+- `AuditCreated`
+- `AuditVerificationFailed`
+
+## Upgrade Notes
+
+Check missing v2 columns:
+
+```bash
+php artisan audit:upgrade v1-to-v2 --dry-run
+```
+
+The command checks for:
+
+```text
+audit_hash
+previous_hash
+tenant_type
+tenant_id
+changes
+```
+
+Example migration for existing audit tables:
+
+```php
+Schema::table('audit_orders_logs', function (Blueprint $table): void {
+    $table->json('changes')->nullable()->after('new_values');
+    $table->string('tenant_type')->nullable()->after('causer_id');
+    $table->string('tenant_id')->nullable()->after('tenant_type');
+    $table->string('audit_hash', 128)->nullable()->after('source');
+    $table->string('previous_hash', 128)->nullable()->after('audit_hash');
+
+    $table->index('tenant_id');
+    $table->index(['tenant_id', 'created_at']);
+    $table->index('audit_hash');
+    $table->index('previous_hash');
+});
+```
+
+Recommended production upgrade order:
+
+1. Deploy code with new features disabled.
+2. Run `audit:upgrade v1-to-v2 --dry-run`.
+3. Add missing nullable columns through migrations.
+4. Enable tenant/change/snapshot features as needed.
+5. Enable hash-chain mode only after hash columns exist.
+6. Run `audit:doctor` and `audit:config-check`.
+7. Verify CI and monitor audit writes.
 
 ## Comparison
 
@@ -429,77 +728,104 @@ php artisan audit:cleanup --force
 | Timeline/diff API | Yes | Manual formatting | Auditable transition data |
 | Restore/replay API | Yes | No built-in model restore | Limited/manual workflows |
 | Tamper-evident hash chain | Yes | No | No |
+| Append-only mode | Yes | No | No |
+| Multi-tenancy context | Yes | Manual | Manual/resolver-based |
+| Native batch insert helper | Yes | No package-level helper | No package-level helper |
+| Relationship audit helper | Yes | Manual | Manual/custom |
+| API resources | Yes | No | No |
 | Field redactors/transformers | Yes | Custom pipes/manual | Attribute modifiers/resolvers |
 | Retention strategies | Delete, anonymize, archive | Manual cleanup | Manual cleanup |
+| Operational doctor command | Yes | No | No |
 
 ## Testing
 
-Run the test suite:
+Run tests:
 
 ```bash
 composer test
 ```
 
-Run static analysis and style checks:
+Run style checks:
 
 ```bash
-composer analyse
 composer pint:test
 ```
 
-Fix style automatically:
+Fix style:
 
 ```bash
 composer pint
 ```
 
-## Security Best Practices
+If your project has static analysis configured:
 
-- Exclude or redact secrets, tokens, passwords, API keys, and payment fields.
-- Use field transformers for PII that must be retained in masked or hashed form.
-- Store `AUDIT_HASH_KEY` securely and rotate it intentionally.
-- Restrict audit log access with Laravel policies/gates.
-- Use retention policies for privacy and compliance requirements.
-- Run `AuditLogger::verifyHashChain()` periodically if hash-chain mode is enabled.
+```bash
+composer analyse
+```
 
 ## Troubleshooting
 
 ### Audit tables are not created
 
-Check:
+For development, enable auto-migration:
 
-```php
-'audit-logger.auto_migration' => true
+```env
+AUDIT_AUTO_MIGRATION=true
 ```
 
-Or create storage manually through the configured driver.
+For production, generate and run migrations:
 
-### Causer is not recorded
+```bash
+php artisan audit:make-migration App\Models\Order
+php artisan migrate
+```
 
-Check that the user is authenticated during the operation, and verify your configured guard:
+Or create storage explicitly:
+
+```bash
+php artisan audit:migrate --entity=App\Models\Order
+```
+
+### Hash verification says columns are missing
+
+Add nullable `audit_hash` and `previous_hash` columns before enabling hash-chain verification.
+
+### Batch inserts are not used
+
+Native batch insert is intentionally skipped when:
+
+- `AUDIT_QUEUE_ENABLED=true`; or
+- `AUDIT_HASH_CHAIN_ENABLED=true`; or
+- `AUDIT_BATCH_ENABLED=false`.
+
+### Tenant fields are not stored
+
+Check all three:
+
+- `AUDIT_TENANT_ENABLED=true`
+- resolver implements `TenantResolverInterface`
+- audit table has `tenant_type` and `tenant_id` columns
+
+### Restore is blocked
+
+If authorization is enabled, define the configured gate:
 
 ```php
-'causer' => [
-    'guard' => 'web',
-]
+Gate::define('restoreFromAudit', fn ($user, $model) => $user->can('update', $model));
 ```
 
 ### Queued logs are missing
 
-Make sure queue workers are running:
+Run an audit queue worker:
 
 ```bash
-php artisan queue:work --queue=audit
+php artisan queue:work --queue=audit --tries=3 --timeout=60
 ```
 
-### Hash verification fails
+## Documentation
 
-Possible causes:
-
-- audit rows were edited manually;
-- `AUDIT_HASH_KEY` changed;
-- old rows existed before hash-chain mode was enabled;
-- records were imported without preserving hash order.
+- [Advanced audit features](docs/advanced-audit-features.md)
+- [v2 major release infrastructure](docs/v2-major-release.md)
 
 ## Contributing
 
@@ -510,7 +836,6 @@ Before opening a pull request:
 ```bash
 composer install
 composer test
-composer analyse
 composer pint:test
 ```
 
