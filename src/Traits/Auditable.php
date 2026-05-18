@@ -162,11 +162,6 @@ trait Auditable
         return app(AuditFieldTransformer::class)->transform($auditable, $this, $direction);
     }
 
-    public function getKey(): string|int
-    {
-        return $this->getAttribute($this->getKeyName());
-    }
-
     public function auditLogs()
     {
         return EloquentAuditLog::forEntity(static::class)
