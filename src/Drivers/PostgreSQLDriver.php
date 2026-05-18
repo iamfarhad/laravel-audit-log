@@ -6,7 +6,9 @@ namespace iamfarhad\LaravelAuditLog\Drivers;
 
 use iamfarhad\LaravelAuditLog\Contracts\AuditDriverInterface;
 use iamfarhad\LaravelAuditLog\Contracts\AuditLogInterface;
+use iamfarhad\LaravelAuditLog\Contracts\TenantResolverInterface;
 use iamfarhad\LaravelAuditLog\Models\EloquentAuditLog;
+use iamfarhad\LaravelAuditLog\Services\AuditChangeSet;
 use iamfarhad\LaravelAuditLog\Services\AuditHash;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -56,8 +58,18 @@ final class PostgreSQLDriver implements AuditDriverInterface
     /** @param array<AuditLogInterface> $logs */
     public function storeBatch(array $logs): void
     {
+        $grouped = [];
+
         foreach ($logs as $log) {
-            $this->store($log);
+            $this->validateEntityType($log->getEntityType());
+            $this->ensureStorageExists($log->getEntityType());
+            $grouped[$this->getTableName($log->getEntityType())][] = $this->payloadForInsert($log);
+        }
+
+        foreach ($grouped as $tableName => $rows) {
+            foreach (array_chunk($rows, (int) config('audit-logger.batch.size', 500)) as $chunk) {
+                DB::connection($this->connection)->table($tableName)->insert($chunk);
+            }
         }
     }
 
@@ -71,8 +83,11 @@ final class PostgreSQLDriver implements AuditDriverInterface
             $table->string('action');
             $table->jsonb('old_values')->nullable();
             $table->jsonb('new_values')->nullable();
+            $table->jsonb('changes')->nullable();
             $table->string('causer_type')->nullable();
             $table->string('causer_id')->nullable();
+            $table->string('tenant_type')->nullable();
+            $table->string('tenant_id')->nullable();
             $table->jsonb('metadata')->nullable();
             $table->timestamp('created_at');
             $table->string('source')->nullable();
@@ -81,6 +96,7 @@ final class PostgreSQLDriver implements AuditDriverInterface
             $table->timestamp('anonymized_at')->nullable();
             $table->index('entity_id');
             $table->index('causer_id');
+            $table->index('tenant_id');
             $table->index('created_at');
             $table->index('action');
             $table->index('source');
@@ -89,6 +105,7 @@ final class PostgreSQLDriver implements AuditDriverInterface
             $table->index('anonymized_at');
             $table->index(['entity_id', 'action']);
             $table->index(['entity_id', 'created_at']);
+            $table->index(['tenant_id', 'created_at']);
             $table->index(['causer_id', 'action']);
             $table->index(['action', 'created_at']);
         });
@@ -138,11 +155,48 @@ final class PostgreSQLDriver implements AuditDriverInterface
             'created_at' => $log->getCreatedAt(),
             'source' => $log->getSource(),
         ];
+
+        $payload = $this->withV2Context($log, $payload);
+
         $hash = app(AuditHash::class);
         if ($hash->enabled()) {
             $previousHash = $this->latestHashForEntity($log->getEntityType());
             $payload['previous_hash'] = $previousHash;
             $payload['audit_hash'] = $hash->compute($log, $previousHash);
+        }
+
+        return $this->filterPayloadForTable($this->getTableName($log->getEntityType()), $payload);
+    }
+
+    private function payloadForInsert(AuditLogInterface $log): array
+    {
+        return array_map(
+            fn (mixed $value): mixed => is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR) : $value,
+            $this->payloadForLog($log)
+        );
+    }
+
+    private function withV2Context(AuditLogInterface $log, array $payload): array
+    {
+        if ((bool) config('audit-logger.tenant.enabled', false)) {
+            $tenant = app(TenantResolverInterface::class)->resolve();
+            $payload[config('audit-logger.tenant.columns.type', 'tenant_type')] = $tenant['type'];
+            $payload[config('audit-logger.tenant.columns.id', 'tenant_id')] = $tenant['id'];
+        }
+
+        if ((bool) config('audit-logger.changes.store', false)) {
+            $payload[(string) config('audit-logger.changes.column', 'changes')] = app(AuditChangeSet::class)->make($log->getOldValues(), $log->getNewValues());
+        }
+
+        return $payload;
+    }
+
+    private function filterPayloadForTable(string $tableName, array $payload): array
+    {
+        foreach (array_keys($payload) as $column) {
+            if (! Schema::connection($this->connection)->hasColumn($tableName, $column)) {
+                unset($payload[$column]);
+            }
         }
 
         return $payload;
