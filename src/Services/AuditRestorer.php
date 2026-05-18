@@ -58,6 +58,8 @@ final class AuditRestorer
     private function resolveLog(Model $model, EloquentAuditLog|int|string $auditLog): EloquentAuditLog
     {
         if ($auditLog instanceof EloquentAuditLog) {
+            $this->ensureLogBelongsToModel($model, $auditLog);
+
             return $auditLog;
         }
 
@@ -73,6 +75,15 @@ final class AuditRestorer
         }
 
         return $log;
+    }
+
+    private function ensureLogBelongsToModel(Model $model, EloquentAuditLog $log): void
+    {
+        $expectedTable = EloquentAuditLog::forEntity($model::class)->getTable();
+
+        if ($log->getTable() !== $expectedTable || (string) $log->entity_id !== (string) $model->getKey()) {
+            throw new InvalidArgumentException('Audit log not found for this model.');
+        }
     }
 
     /** @return array<string, mixed> */
