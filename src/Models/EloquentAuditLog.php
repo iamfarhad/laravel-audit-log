@@ -6,7 +6,6 @@ namespace iamfarhad\LaravelAuditLog\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class EloquentAuditLog extends Model
@@ -108,9 +107,11 @@ final class EloquentAuditLog extends Model
     {
         $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
         $jsonColumns = ['old_values', 'new_values', 'metadata'];
-        $isPostgreSQL = $query->getModel()->getConnection()->getDriverName() === 'pgsql';
+        $connection = $query->getModel()->getConnection();
+        $grammar = $connection->getQueryGrammar();
+        $isPostgreSQL = $connection->getDriverName() === 'pgsql';
 
-        return $query->where(function (Builder $query) use ($isPostgreSQL, $jsonColumns, $like): void {
+        return $query->where(function (Builder $query) use ($grammar, $isPostgreSQL, $jsonColumns, $like): void {
             $query->where('entity_id', 'like', $like)
                 ->orWhere('action', 'like', $like)
                 ->orWhere('source', 'like', $like)
@@ -119,7 +120,7 @@ final class EloquentAuditLog extends Model
 
             foreach ($jsonColumns as $column) {
                 if ($isPostgreSQL) {
-                    $query->orWhereRaw(DB::getQueryGrammar()->wrap($column).'::text LIKE ?', [$like]);
+                    $query->orWhereRaw($grammar->wrap($column).'::text LIKE ?', [$like]);
                 } else {
                     $query->orWhere($column, 'like', $like);
                 }
