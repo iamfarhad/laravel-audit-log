@@ -25,23 +25,12 @@ final class MySQLDriver implements AuditDriverInterface
 
     private static array $existingTables = [];
 
-    private static ?array $configCache = null;
-
     public function __construct(?string $connection = null)
     {
-        $this->config = self::getConfigCache();
+        $this->config = config('audit-logger');
         $this->connection = $connection ?? $this->config['drivers']['mysql']['connection'] ?? config('database.default');
         $this->tablePrefix = $this->config['drivers']['mysql']['table_prefix'] ?? 'audit_';
         $this->tableSuffix = $this->config['drivers']['mysql']['table_suffix'] ?? '_logs';
-    }
-
-    private static function getConfigCache(): array
-    {
-        if (self::$configCache === null) {
-            self::$configCache = config('audit-logger');
-        }
-
-        return self::$configCache;
     }
 
     private function validateEntityType(string $entityType): void
@@ -129,7 +118,6 @@ final class MySQLDriver implements AuditDriverInterface
     public static function clearCache(): void
     {
         self::$existingTables = [];
-        self::$configCache = null;
     }
 
     public static function clearTableCache(): void
