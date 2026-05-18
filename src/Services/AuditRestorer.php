@@ -39,8 +39,13 @@ final class AuditRestorer
 
     private function apply(Model $model, EloquentAuditLog|int|string $auditLog, string $mode, bool $save): Model
     {
+        if (! app(AuditAuthorization::class)->canRestore($model)) {
+            throw new InvalidArgumentException('You are not authorized to restore this model from audit history.');
+        }
+
         $log = $this->resolveLog($model, $auditLog);
         $values = $this->valuesForMode($log, $mode);
+        $values = $this->filterRestorableValues($model, $values);
 
         if ($values === []) {
             throw new InvalidArgumentException("The selected audit log does not contain {$mode} values to apply.");
@@ -49,7 +54,7 @@ final class AuditRestorer
         $model->forceFill($values);
 
         if ($save) {
-            $model->save();
+            $this->saveModel($model);
         }
 
         return $model;
@@ -96,5 +101,38 @@ final class AuditRestorer
         };
 
         return is_array($values) ? $values : [];
+    }
+
+    /** @param array<string, mixed> $values */
+    private function filterRestorableValues(Model $model, array $values): array
+    {
+        if (! (bool) config('audit-logger.restore.validate_fillable', false)) {
+            return $values;
+        }
+
+        return array_intersect_key($values, array_flip($model->getFillable()));
+    }
+
+    private function saveModel(Model $model): void
+    {
+        if ((bool) config('audit-logger.restore.audit_restores', true)) {
+            $model->save();
+
+            return;
+        }
+
+        $wasAuditingEnabled = method_exists($model, 'isAuditingEnabled') ? $model->isAuditingEnabled() : null;
+
+        if (method_exists($model, 'disableAuditing')) {
+            $model->disableAuditing();
+        }
+
+        try {
+            $model->save();
+        } finally {
+            if ($wasAuditingEnabled === true && method_exists($model, 'enableAuditing')) {
+                $model->enableAuditing();
+            }
+        }
     }
 }
